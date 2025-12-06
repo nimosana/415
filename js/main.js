@@ -15,12 +15,17 @@ const startSrc = 'startHTML.webm';
 const tutorialSrc = 'tutoHTML.webm';
 let switchingLeft = false;
 let switchingRight = false;
-
+let firstSong = true;
 let queuedLeftIndex = null;
 let queuedRightIndex = null;
 const buttons = [btnStart, btnTutorial];
 
-
+// Original playlist
+const masterList = [
+    "audio/song1.mp3",
+    "audio/song2.mp3",
+    "audio/song3.mp3",
+];
 const HALF = 0.5;
 // -------------------------------
 // Utility: load video
@@ -75,10 +80,10 @@ window.addEventListener("resize", () => {
 btnStart.addEventListener('click', () => {
     btnStart.style.display = "none";
     btnTutorial.style.display = "none";
+    playRandomSong();
 
     menuVideo.pause();
     menuVideo.remove();
-
     carLeft.style.display = "block";
     carRight.style.display = "block";
 
@@ -198,6 +203,7 @@ buttons.forEach(btn => {
         }
     });
 
+
     btn.addEventListener('mouseleave', () => {
         if (!menuVideo.src.endsWith(idleSrc)) {
             menuVideo.src = idleSrc;
@@ -206,3 +212,35 @@ buttons.forEach(btn => {
         }
     });
 });
+const bgm = document.getElementById("bgm");
+
+
+
+// This will be filled and emptied as songs are played
+let playlist = [];
+
+// Get a random item and remove it from the list
+function getRandomSong() {
+    if (playlist.length === 0) {
+        // refill when empty
+        playlist = [...masterList];
+    }
+
+    let i = Math.floor(Math.random() * playlist.length);
+    if (firstSong) i = 0;
+    return playlist.splice(i, 1)[0];
+}
+
+function playRandomSong() {
+    const next = getRandomSong();
+    bgm.src = next;
+    console.log(next)
+    bgm.load();
+    bgm.addEventListener("canplaythrough", () => {
+        bgm.play().catch(() => { });
+    }, { once: true });
+}
+// When one song ends → start another
+bgm.addEventListener("ended", playRandomSong);
+
+// Start immediately on app launch
