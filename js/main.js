@@ -9,7 +9,9 @@ const leftCars = ["car1L.webm", "car2L.webm", "car3L.webm"];
 const rightCars = ["car1R.webm", "car2R.webm", "car3R.webm"];
 
 let leftIndex = 0;
-let rightIndex = 0;
+let rightIndex = 1;
+let leftIndexDir = 0;
+let rightIndexDir = 0;
 const idleSrc = 'idleHTML.webm';
 const startSrc = 'startHTML.webm';
 const tutorialSrc = 'tutoHTML.webm';
@@ -18,6 +20,7 @@ let switchingRight = false;
 let firstSong = true;
 let queuedLeftIndex = null;
 let queuedRightIndex = null;
+let introStarted = false;
 const buttons = [btnStart, btnTutorial];
 
 // Original playlist
@@ -27,6 +30,38 @@ const masterList = [
     "audio/song3.mp3",
 ];
 const HALF = 0.5;
+const introVideo = document.getElementById("introVideo");
+
+const introSrc = "introHTML.webm"; // your intro video
+introVideo.addEventListener("click", () => {
+    // Hide start screen and play intro
+    if (!introStarted) {
+        introStarted = true;
+        introVideo.src = introSrc;
+        introVideo.style.display = "block";
+        introVideo.play();
+        playRandomSong();
+
+    }
+});
+introVideo.play();
+introVideo.pause();
+
+
+menuVideo.style.display = "none";
+btnStart.style.display = "none";
+btnTutorial.style.display = "none";
+introVideo.addEventListener("ended", () => {
+    introVideo.pause();
+    introVideo.remove();
+
+    // Show menu
+    menuVideo.style.display = "block";
+    btnStart.style.display = "block";
+    btnTutorial.style.display = "block";
+
+    menuVideo.play();
+});
 // -------------------------------
 // Utility: load video
 // -------------------------------
@@ -44,43 +79,12 @@ function loadCar(video, src, startIdle = false) {
     });
 }
 
-function alignCarVideos() {
-    const container = document.getElementById("videoContainer");
-    const carLeft = document.getElementById("carLeft");
-    const carRight = document.getElementById("carRight");
-    const containerWidth = container.clientWidth;
-    const halfContainer = containerWidth / 2;
 
-    [carLeft, carRight].forEach((vid) => {
-        if (vid.videoWidth === 0) return; // fallback if not loaded
-        const scale = vid.clientHeight / vid.videoHeight;
-        const vidWidth = vid.videoWidth * scale;
-
-        if (vid.id === "carLeft") {
-            vid.style.left = `${halfContainer - vidWidth}px`;
-        } else {
-            vid.style.left = `${halfContainer}px`;
-        }
-    });
-}
-
-// Initial setup after videos load
-[carLeft, carRight].forEach((vid) => {
-    vid.addEventListener("loadedmetadata", () => {
-        // alignCarVideos();
-    }, { once: true });
-});
-
-// Re-align on window resize
-window.addEventListener("resize", () => {
-    // alignCarVideos();
-});
 
 // Start button
 btnStart.addEventListener('click', () => {
     btnStart.style.display = "none";
     btnTutorial.style.display = "none";
-    playRandomSong();
 
     menuVideo.pause();
     menuVideo.remove();
@@ -119,28 +123,36 @@ carRight.addEventListener("timeupdate", () => {
 document.addEventListener("keydown", (e) => {
 
     // LEFT SIDE (A / D)
-    if (e.key === "a" || e.key === "A") {
+    if ((e.key === "a" || e.key === "A") && !switchingLeft) {
         queuedLeftIndex = (leftIndex - 1 + leftCars.length) % leftCars.length;
         switchingLeft = true;
+        leftIndexDir = -1;
+        console.log("queued left: " + queuedLeftIndex)
         carLeft.play();  // resume from 50%
     }
 
-    if (e.key === "d" || e.key === "D") {
+    if ((e.key === "d" || e.key === "D") && !switchingLeft) {
         queuedLeftIndex = (leftIndex + 1) % leftCars.length;
         switchingLeft = true;
+        leftIndexDir = 1;
+        console.log("queued left: " + queuedLeftIndex)
         carLeft.play();
     }
 
     // RIGHT SIDE (Arrows)
-    if (e.key === "ArrowLeft") {
+    if (e.key === "ArrowLeft" && !switchingRight) {
         queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
         switchingRight = true;
+        console.log("queued right: " + queuedRightIndex)
+        rightIndexDir = -1;
         carRight.play();
     }
 
-    if (e.key === "ArrowRight") {
+    if (e.key === "ArrowRight" && !switchingRight) {
         queuedRightIndex = (rightIndex + 1) % rightCars.length;
         switchingRight = true;
+        rightIndexDir = 1;
+        console.log("queued right: " + queuedRightIndex)
         carRight.play();
     }
 });
@@ -152,6 +164,11 @@ carLeft.addEventListener("ended", () => {
     if (!switchingLeft) return;
 
     switchingLeft = false;
+    if (queuedLeftIndex === rightIndex) {
+        queuedLeftIndex = (queuedLeftIndex + leftIndexDir) % rightCars.length;
+        if (queuedLeftIndex === -1) queuedLeftIndex = 2;
+        console.log("final queue left: " + queuedLeftIndex)
+    }
     leftIndex = queuedLeftIndex;
     queuedLeftIndex = null;
 
@@ -163,6 +180,11 @@ carRight.addEventListener("ended", () => {
     if (!switchingRight) return;
 
     switchingRight = false;
+    if (queuedRightIndex === leftIndex) {
+        queuedRightIndex = (queuedRightIndex + rightIndexDir) % rightCars.length;
+        if (queuedRightIndex === -1) queuedRightIndex = 2;
+        console.log("final queue right: " + queuedRightIndex)
+    }
     rightIndex = queuedRightIndex;
     queuedRightIndex = null;
 
@@ -202,8 +224,6 @@ buttons.forEach(btn => {
             }
         }
     });
-
-
     btn.addEventListener('mouseleave', () => {
         if (!menuVideo.src.endsWith(idleSrc)) {
             menuVideo.src = idleSrc;
@@ -212,10 +232,9 @@ buttons.forEach(btn => {
         }
     });
 });
+
+
 const bgm = document.getElementById("bgm");
-
-
-
 // This will be filled and emptied as songs are played
 let playlist = [];
 
