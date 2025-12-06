@@ -243,7 +243,7 @@ buttons.forEach(btn => {
     btn.addEventListener('mouseenter', () => {
         if (btn.id === 'btnStart') {
             if (!menuVideo.src.endsWith(startSrc)) {
-                // menuVideo.src = startSrc;
+                menuVideo.src = startSrc;
                 menuVideo.loop = true;
                 menuVideo.play();
             }
