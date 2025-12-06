@@ -26,7 +26,7 @@ let goingBack = false;
 let inCarSelection = false;
 let leftDone = false;
 let rightDone = false;
-
+let gameState = "menu";
 // Original playlist
 const masterList = [
     "audio/song1.mp3",
@@ -124,7 +124,7 @@ carRight.addEventListener("timeupdate", () => {
 // KEY INPUT — Queue a switch
 // -------------------------------
 document.addEventListener("keydown", (e) => {
-
+    if (gameState !== "carSelection") return;
     // LEFT SIDE (A / D)
     if ((e.key === "a" || e.key === "A") && !switchingLeft) {
         queuedLeftIndex = (leftIndex - 1 + leftCars.length) % leftCars.length;
@@ -232,16 +232,18 @@ function checkBackDone() {
         btnTutorial.style.display = "block";
 
         // Reset menu video to idle
-        menuVideo.src = idleSrc;
+        // menuVideo.src = idleSrc;
         menuVideo.loop = true;
         menuVideo.currentTime = 0;
-        menuVideo.play();
+        // menuVideo.play();
+        gameState = "menu";
     }
 }
 // Hover animations
 buttons.forEach(btn => {
     btn.addEventListener('mouseenter', () => {
         if (btn.id === 'btnStart') {
+            gameState = "carSelection";
             if (!menuVideo.src.endsWith(startSrc)) {
                 menuVideo.src = startSrc;
                 menuVideo.loop = true;
