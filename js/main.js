@@ -22,6 +22,10 @@ let queuedLeftIndex = null;
 let queuedRightIndex = null;
 let introStarted = false;
 const buttons = [btnStart, btnTutorial];
+let goingBack = false;
+let inCarSelection = false;
+let leftDone = false;
+let rightDone = false;
 
 // Original playlist
 const masterList = [
@@ -79,15 +83,14 @@ function loadCar(video, src, startIdle = false) {
     });
 }
 
-
-
 // Start button
 btnStart.addEventListener('click', () => {
     btnStart.style.display = "none";
     btnTutorial.style.display = "none";
 
     menuVideo.pause();
-    menuVideo.remove();
+    menuVideo.style.display = "none";
+    inCarSelection = true;
     carLeft.style.display = "block";
     carRight.style.display = "block";
 
@@ -105,14 +108,14 @@ btnStart.addEventListener('click', () => {
 // LIMITER — Freeze at 50% when idle
 // -------------------------------
 carLeft.addEventListener("timeupdate", () => {
-    if (!switchingLeft && carLeft.currentTime > carLeft.duration * HALF) {
+    if (!switchingLeft && !goingBack && carLeft.currentTime > carLeft.duration * HALF) {
         carLeft.pause();
         carLeft.currentTime = carLeft.duration * HALF;
     }
 });
 
 carRight.addEventListener("timeupdate", () => {
-    if (!switchingRight && carRight.currentTime > carRight.duration * HALF) {
+    if (!switchingRight && !goingBack && carRight.currentTime > carRight.duration * HALF) {
         carRight.pause();
         carRight.currentTime = carRight.duration * HALF;
     }
@@ -139,6 +142,18 @@ document.addEventListener("keydown", (e) => {
         carLeft.play();
     }
 
+    // ESCAPE (Back to Menu)
+    if (e.key === "Escape" && inCarSelection && !goingBack) {
+        goingBack = true;
+        leftDone = false;
+        rightDone = false;
+
+        // Play both videos to completion
+        carLeft.play();
+        carRight.play();
+        return;
+    }
+
     // RIGHT SIDE (Arrows)
     if (e.key === "ArrowLeft" && !switchingRight) {
         queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
@@ -161,6 +176,12 @@ document.addEventListener("keydown", (e) => {
 // When CURRENT animation ends → switch
 // -------------------------------
 carLeft.addEventListener("ended", () => {
+    if (goingBack) {
+        leftDone = true;
+        checkBackDone();
+        return;
+    }
+
     if (!switchingLeft) return;
 
     switchingLeft = false;
@@ -177,6 +198,12 @@ carLeft.addEventListener("ended", () => {
 });
 
 carRight.addEventListener("ended", () => {
+    if (goingBack) {
+        rightDone = true;
+        checkBackDone();
+        return;
+    }
+
     if (!switchingRight) return;
 
     switchingRight = false;
@@ -190,28 +217,33 @@ carRight.addEventListener("ended", () => {
 
     loadCar(carRight, rightCars[rightIndex], false);
 });
-// -------------------------------
-// IDLE limiter — freeze at 50% only if not switching
-// -------------------------------
-carLeft.addEventListener("timeupdate", () => {
-    if (!switchingLeft && carLeft.currentTime > carLeft.duration * HALF) {
-        carLeft.pause();
-        carLeft.currentTime = carLeft.duration * HALF;
-    }
-});
+function checkBackDone() {
+    if (leftDone && rightDone) {
+        goingBack = false;
+        inCarSelection = false;
 
-carRight.addEventListener("timeupdate", () => {
-    if (!switchingRight && carRight.currentTime > carRight.duration * HALF) {
-        carRight.pause();
-        carRight.currentTime = carRight.duration * HALF;
+        // Hide cars
+        carLeft.style.display = "none";
+        carRight.style.display = "none";
+
+        // Show menu
+        menuVideo.style.display = "block";
+        btnStart.style.display = "block";
+        btnTutorial.style.display = "block";
+
+        // Reset menu video to idle
+        menuVideo.src = idleSrc;
+        menuVideo.loop = true;
+        menuVideo.currentTime = 0;
+        menuVideo.play();
     }
-});
+}
 // Hover animations
 buttons.forEach(btn => {
     btn.addEventListener('mouseenter', () => {
         if (btn.id === 'btnStart') {
             if (!menuVideo.src.endsWith(startSrc)) {
-                menuVideo.src = startSrc;
+                // menuVideo.src = startSrc;
                 menuVideo.loop = true;
                 menuVideo.play();
             }
