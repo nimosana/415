@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Carpet Racer</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+
+
+    .bgimg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      /* below videos */
+    }
+
+    /* Video with transparency */
+    video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: transparent;
+      z-index: 1;
+    }
+
+    /* Hotspots */
+    .menuButtons {
+      position: absolute;
+      cursor: pointer;
+      z-index: 2;
+      /* above video */
+    }
+
+    #btnStart {
+      left: 15%;
+      bottom: 51%;
+      width: 29%;
+      height: 22%;
+      /* background-color: rgba(100, 100, 100, 0.5); */
+    }
+
+    #btnTutorial {
+      right: 17%;
+      bottom: 12%;
+      width: 31%;
+      height: 22%;
+      /* background-color: rgba(100, 100, 100, 0.5); */
+    }
+
+    /* Main 16:9 Frame */
+    #videoContainer {
+      position: relative;
+      width: 80vw;
+      aspect-ratio: 1920/1080;
+      border: 0px solid lime;
+      /* debug frame */
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .carVideo {
+      position: absolute;
+      /* MUST be absolute */
+      top: 0;
+      height: 100%;
+      /* fill container height */
+      width: auto;
+      /* scale proportionally */
+      object-fit: contain;
+      /* show full video */
+      display: none;
+      /* initially hidden */
+      z-index: 3;
+      transform: translateX(-50%);
+      /* center by middle */
+    }
+
+    #carLeft {
+      left: 25%;
+      /* center at 1/4 of container */
+    }
+
+    #carRight {
+      left: 75%;
+      /* center at 3/4 of container */
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div id="videoContainer">
+
+    <video id="bgvideo" autoplay muted playsinline src="menubg.webm"></video>
+
+    <!-- Main menu video -->
+    <video id="menuVideo" autoplay muted playsinline loop src="idleHTML.webm"></video>
+
+    <!-- Car selection videos (initially hidden) -->
+    <video id="carLeft" class="carVideo"></video>
+    <video id="carRight" class="carVideo"></video>
+
+    <div id="btnStart" class="menuButtons"></div>
+    <div id="btnTutorial" class="menuButtons"></div>
+
+  </div>
+
+  <script src="js/main.js"></script>
+
+</body>
+
+</html>
