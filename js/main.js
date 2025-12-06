@@ -269,22 +269,31 @@ buttons.forEach(btn => {
 const bgm = document.getElementById("bgm");
 // This will be filled and emptied as songs are played
 let playlist = [];
-
+let lastSong = "";
 // Get a random item and remove it from the list
 function getRandomSong() {
+    let i = null;
     if (playlist.length === 0) {
         // refill when empty
+        console.log("refilling playlist");
         playlist = [...masterList];
+        i = Math.floor(Math.random() * playlist.length);
+        while (playlist[i] === lastSong) {
+            i = Math.floor(Math.random() * playlist.length);
+            console.log("skipping duplicate song: " + playlist[i]);
+        }
+    } else { i = Math.floor(Math.random() * playlist.length) };
+    if (firstSong) {
+        i = 0;
+        firstSong = false;
     }
-
-    let i = Math.floor(Math.random() * playlist.length);
-    if (firstSong) i = 0;
     return playlist.splice(i, 1)[0];
 }
 
 function playRandomSong() {
     const next = getRandomSong();
     bgm.src = next;
+    lastSong = next;
     console.log(next)
     bgm.load();
     bgm.addEventListener("canplaythrough", () => {
@@ -293,5 +302,3 @@ function playRandomSong() {
 }
 // When one song ends → start another
 bgm.addEventListener("ended", playRandomSong);
-
-// Start immediately on app launch
