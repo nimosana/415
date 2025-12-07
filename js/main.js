@@ -1,42 +1,40 @@
+const introSrc = "assets/video/introHTML.webm";
+const idleSrc = 'assets/video/idleHTML.webm';
+const startSrc = 'assets/video/startHTML.webm';
+const tutorialSrc = 'assets/video/tutoHTML.webm';
+
+const leftCars = ["assets/video/car1L.webm", "assets/video/car2L.webm", "assets/video/car3L.webm"];
+const rightCars = ["assets/video/car1R.webm", "assets/video/car2R.webm", "assets/video/car3R.webm"];
+
+let introStarted = false;
+const introVideo = document.getElementById("introVideo");
+introVideo.pause();
+
 const menuVideo = document.getElementById('menuVideo');
 const btnStart = document.getElementById('btnStart');
 const btnTutorial = document.getElementById('btnTutorial');
+const buttons = [btnStart, btnTutorial];
 
 const carLeft = document.getElementById('carLeft');
 const carRight = document.getElementById('carRight');
-
-const leftCars = ["car1L.webm", "car2L.webm", "car3L.webm"];
-const rightCars = ["car1R.webm", "car2R.webm", "car3R.webm"];
 
 let leftIndex = 0;
 let rightIndex = 1;
 let leftIndexDir = 0;
 let rightIndexDir = 0;
-const idleSrc = 'idleHTML.webm';
-const startSrc = 'startHTML.webm';
-const tutorialSrc = 'tutoHTML.webm';
 let switchingLeft = false;
 let switchingRight = false;
-let firstSong = true;
 let queuedLeftIndex = null;
 let queuedRightIndex = null;
-let introStarted = false;
-const buttons = [btnStart, btnTutorial];
+
 let goingBack = false;
 let inCarSelection = false;
 let leftDone = false;
 let rightDone = false;
 let gameState = "menu";
-// Original playlist
-const masterList = [
-    "audio/song1.mp3",
-    "audio/song2.mp3",
-    "audio/song3.mp3",
-];
-const HALF = 0.5;
-const introVideo = document.getElementById("introVideo");
 
-const introSrc = "introHTML.webm"; // your intro video
+const HALF = 0.5;
+
 introVideo.addEventListener("click", () => {
     // Hide start screen and play intro
     if (!introStarted) {
@@ -44,13 +42,11 @@ introVideo.addEventListener("click", () => {
         introVideo.src = introSrc;
         introVideo.style.display = "block";
         introVideo.play();
-        playRandomSong();
-
+        Audio.playRandomSong();
     }
 });
-introVideo.play();
-introVideo.pause();
-
+// When one song ends → start another
+bgm.addEventListener("ended", Audio.playRandomSong);
 
 menuVideo.style.display = "none";
 btnStart.style.display = "none";
@@ -66,6 +62,7 @@ introVideo.addEventListener("ended", () => {
 
     menuVideo.play();
 });
+
 // -------------------------------
 // Utility: load video
 // -------------------------------
@@ -217,6 +214,7 @@ carRight.addEventListener("ended", () => {
 
     loadCar(carRight, rightCars[rightIndex], false);
 });
+
 function checkBackDone() {
     if (leftDone && rightDone) {
         goingBack = false;
@@ -239,6 +237,7 @@ function checkBackDone() {
         gameState = "menu";
     }
 }
+
 // Hover animations
 buttons.forEach(btn => {
     btn.addEventListener('mouseenter', () => {
@@ -266,41 +265,3 @@ buttons.forEach(btn => {
         }
     });
 });
-
-
-const bgm = document.getElementById("bgm");
-// This will be filled and emptied as songs are played
-let playlist = [];
-let lastSong = "";
-// Get a random item and remove it from the list
-function getRandomSong() {
-    let i = null;
-    if (playlist.length === 0) {
-        // refill when empty
-        console.log("refilling playlist");
-        playlist = [...masterList];
-        i = Math.floor(Math.random() * playlist.length);
-        while (playlist[i] === lastSong) {
-            i = Math.floor(Math.random() * playlist.length);
-            console.log("skipping duplicate song: " + playlist[i]);
-        }
-    } else { i = Math.floor(Math.random() * playlist.length) };
-    if (firstSong) {
-        i = 0;
-        firstSong = false;
-    }
-    return playlist.splice(i, 1)[0];
-}
-
-function playRandomSong() {
-    const next = getRandomSong();
-    bgm.src = next;
-    lastSong = next;
-    console.log(next)
-    bgm.load();
-    bgm.addEventListener("canplaythrough", () => {
-        bgm.play().catch(() => { });
-    }, { once: true });
-}
-// When one song ends → start another
-bgm.addEventListener("ended", playRandomSong);
