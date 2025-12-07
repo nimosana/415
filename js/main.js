@@ -18,6 +18,8 @@ const buttons = [btnStart, btnTutorial];
 const carLeft = document.getElementById('carLeft');
 const carRight = document.getElementById('carRight');
 
+const uiElements = [];
+
 let leftIndex = 0;
 let rightIndex = 1;
 let leftIndexDir = 0;
@@ -84,7 +86,7 @@ function loadCar(video, src, startIdle = false) {
 btnStart.addEventListener('click', () => {
     btnStart.style.display = "none";
     btnTutorial.style.display = "none";
-
+    showUi();
     menuVideo.pause();
     menuVideo.style.display = "none";
     inCarSelection = true;
@@ -117,58 +119,6 @@ carRight.addEventListener("timeupdate", () => {
         carRight.currentTime = carRight.duration * HALF;
     }
 });
-// -------------------------------
-// KEY INPUT — Queue a switch
-// -------------------------------
-document.addEventListener("keydown", (e) => {
-    if (gameState !== "carSelection") return;
-    // LEFT SIDE (A / D)
-    if ((e.key === "a" || e.key === "A") && !switchingLeft) {
-        queuedLeftIndex = (leftIndex - 1 + leftCars.length) % leftCars.length;
-        switchingLeft = true;
-        leftIndexDir = -1;
-        console.log("queued left: " + queuedLeftIndex)
-        carLeft.play();  // resume from 50%
-    }
-
-    if ((e.key === "d" || e.key === "D") && !switchingLeft) {
-        queuedLeftIndex = (leftIndex + 1) % leftCars.length;
-        switchingLeft = true;
-        leftIndexDir = 1;
-        console.log("queued left: " + queuedLeftIndex)
-        carLeft.play();
-    }
-
-    // ESCAPE (Back to Menu)
-    if (e.key === "Escape" && inCarSelection && !goingBack) {
-        goingBack = true;
-        leftDone = false;
-        rightDone = false;
-
-        // Play both videos to completion
-        carLeft.play();
-        carRight.play();
-        return;
-    }
-
-    // RIGHT SIDE (Arrows)
-    if (e.key === "ArrowLeft" && !switchingRight) {
-        queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
-        switchingRight = true;
-        console.log("queued right: " + queuedRightIndex)
-        rightIndexDir = -1;
-        carRight.play();
-    }
-
-    if (e.key === "ArrowRight" && !switchingRight) {
-        queuedRightIndex = (rightIndex + 1) % rightCars.length;
-        switchingRight = true;
-        rightIndexDir = 1;
-        console.log("queued right: " + queuedRightIndex)
-        carRight.play();
-    }
-});
-
 // -------------------------------
 // When CURRENT animation ends → switch
 // -------------------------------
@@ -219,7 +169,7 @@ function checkBackDone() {
     if (leftDone && rightDone) {
         goingBack = false;
         inCarSelection = false;
-
+        removeUi();
         // Hide cars
         carLeft.style.display = "none";
         carRight.style.display = "none";
@@ -265,3 +215,236 @@ buttons.forEach(btn => {
         }
     });
 });
+
+// Track intervals for cleanup
+const floatingUIRegistry = new Map();
+function createFloatingUIElement(src, opts) {
+    const {
+        containerId,
+        left,
+        top,
+        scale = 0.1,   // relative to container width (0.1 = 10%)
+        fadeIn = true,
+        opacity = 1
+    } = opts;
+
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error("Container not found:", containerId);
+        return null;
+    }
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.classList.add("floating-ui");
+
+    img.style.position = "absolute";
+    img.style.left = typeof left === "number" ? `${left}%` : left;
+    img.style.top = typeof top === "number" ? `${top}%` : top;
+    img.style.opacity = fadeIn ? 0 : opacity;
+    img.style.transform = "translate(-50%, -50%)"; // Center the image on its coordinates
+
+    container.appendChild(img);
+
+    img.onload = () => {
+        // Compute size relative to container width
+        const containerWidth = container.offsetWidth;
+        img.style.width = `${containerWidth * scale}px`;
+        img.style.height = "auto";
+
+        if (fadeIn) {
+            requestAnimationFrame(() => {
+                img.style.opacity = opacity;
+            });
+        }
+    };
+
+    // Resize observer to keep size relative if container resizes
+    const resizeObserver = new ResizeObserver(() => {
+        const containerWidth = container.offsetWidth;
+        img.style.width = `${containerWidth * scale}px`;
+    });
+    resizeObserver.observe(container);
+
+    // Animation interval
+    const interval = setInterval(() => {
+        const r = Math.random() * 5 - 2;
+        const s = 1 + (Math.random() * 0.1 - 0.05);
+        img.style.transform = `translate(-50%, -50%) rotate(${r}deg) scale(${s})`;
+    }, 1000);
+
+    floatingUIRegistry.set(img, interval);
+
+    return {
+        element: img,
+
+        show() {
+            img.style.opacity = opacity;
+        },
+
+        hide() {
+            img.style.opacity = 0;
+        },
+
+        remove() {
+            img.style.opacity = 0;
+            setTimeout(() => {
+                clearInterval(interval);
+                resizeObserver.disconnect();
+                floatingUIRegistry.delete(img);
+                img.remove();
+            }, 500);
+        }
+    };
+}
+let keyMap;
+function showUi() {
+
+    let escKey = createFloatingUIElement("assets/image/keys_ESC.webp", {
+        containerId: "videoContainer", left: 4, top: 6, scale: 0.06, fadeIn: true
+    });
+
+    let returnUI = createFloatingUIElement("assets/image/return.webp", {
+        containerId: "videoContainer", left: 12, top: 6, scale: 0.09, fadeIn: true
+    });
+
+    let switchCars = createFloatingUIElement("assets/image/switchCars.webp", {
+        containerId: "videoContainer", left: 50, top: 20, scale: 0.1, fadeIn: true
+    });
+
+    let readyUI = createFloatingUIElement("assets/image/ready.webp", {
+        containerId: "videoContainer", left: 50, top: 77.5, scale: 0.06, fadeIn: true
+    });
+    let unreadyUI = createFloatingUIElement("assets/image/unready.webp", {
+        containerId: "videoContainer", left: 50, top: 82.5, scale: 0.06, fadeIn: true
+    });
+
+    let aKeySwitch = createFloatingUIElement("assets/image/keys_A.webp", {
+        containerId: "videoContainer", left: 39, top: 82.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let wKeySwitch = createFloatingUIElement("assets/image/keys_W.webp", {
+        containerId: "videoContainer", left: 42, top: 77.5, scale: 0.03, fadeIn: true,
+    });
+    let dKeySwitch = createFloatingUIElement("assets/image/keys_D.webp", {
+        containerId: "videoContainer", left: 45, top: 82.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let sKeySwitch = createFloatingUIElement("assets/image/keys_S.webp", {
+        containerId: "videoContainer", left: 42, top: 82.5, scale: 0.03, fadeIn: true,
+    });
+
+    let upKeySwitch = createFloatingUIElement("assets/image/keys_UP.webp", {
+        containerId: "videoContainer", left: 58, top: 77.5, scale: 0.03, fadeIn: true,
+    });
+    let downKeySwitch = createFloatingUIElement("assets/image/keys_DOWN.webp", {
+        containerId: "videoContainer", left: 58, top: 82.5, scale: 0.03, fadeIn: true,
+    });
+    let leftKeySwitch = createFloatingUIElement("assets/image/keys_LEFT.webp", {
+        containerId: "videoContainer", left: 55, top: 82.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let rightKeySwitch = createFloatingUIElement("assets/image/keys_RIGHT.webp", {
+        containerId: "videoContainer", left: 61, top: 82.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+
+    let aKeyReady = createFloatingUIElement("assets/image/keys_A.webp", {
+        containerId: "videoContainer", left: 37, top: 22.5, scale: 0.03, fadeIn: true
+    });
+    let wKeyReady = createFloatingUIElement("assets/image/keys_W.webp", {
+        containerId: "videoContainer", left: 40, top: 17.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let dKeyReady = createFloatingUIElement("assets/image/keys_D.webp", {
+        containerId: "videoContainer", left: 43, top: 22.5, scale: 0.03, fadeIn: true
+    });
+    let sKeyReady = createFloatingUIElement("assets/image/keys_S.webp", {
+        containerId: "videoContainer", left: 40, top: 22.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+
+    let upKeyReady = createFloatingUIElement("assets/image/keys_UP.webp", {
+        containerId: "videoContainer", left: 60, top: 17.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let downKeyReady = createFloatingUIElement("assets/image/keys_DOWN.webp", {
+        containerId: "videoContainer", left: 60, top: 22.5, scale: 0.03, fadeIn: true, opacity: 0.5
+    });
+    let leftKeyReady = createFloatingUIElement("assets/image/keys_LEFT.webp", {
+        containerId: "videoContainer", left: 57, top: 22.5, scale: 0.03, fadeIn: true,
+    });
+    let rightKeyReady = createFloatingUIElement("assets/image/keys_RIGHT.webp", {
+        containerId: "videoContainer", left: 63, top: 22.5, scale: 0.03, fadeIn: true,
+    });
+
+
+
+    uiElements.push(readyUI, unreadyUI, aKeyReady, wKeyReady, sKeyReady, dKeyReady, upKeyReady, downKeyReady, leftKeyReady, rightKeyReady, aKeySwitch, wKeySwitch, sKeySwitch, dKeySwitch, upKeySwitch, downKeySwitch, leftKeySwitch, rightKeySwitch, switchCars, escKey, returnUI);
+
+    keyMap = {
+        "a": aKeyReady.element, "A": aKeyReady.element,
+        "w": wKeySwitch.element, "W": wKeySwitch.element,
+        "s": sKeySwitch.element, "S": sKeySwitch.element,
+        "d": dKeyReady.element, "D": dKeyReady.element,
+        "ArrowUp": upKeySwitch.element,
+        "ArrowDown": downKeySwitch.element,
+        "ArrowLeft": leftKeyReady.element,
+        "ArrowRight": rightKeyReady.element,
+        "Escape": escKey.element
+    };
+}
+// Animate keys when pressed
+function animateKeyPress(element, scaleAmount = 1.5, duration = 150) {
+    if (!element) return;
+
+    // Preserve current rotation and translate(-50%, -50%)
+    const originalTransform = element.style.transform || "translate(-50%, -50%) rotate(0deg) scale(1)";
+    const match = originalTransform.match(/rotate\(([-0-9.]+)deg\)/);
+    const currentRotate = match ? parseFloat(match[1]) : 0;
+
+    element.style.transform = `translate(-50%, -50%) rotate(${currentRotate}deg) scale(${scaleAmount})`;
+
+    setTimeout(() => {
+        element.style.transform = originalTransform;
+    }, duration);
+}
+// Keydown listener for animation
+document.addEventListener("keydown", (e) => {
+    if (gameState !== "carSelection") return;
+
+    animateKeyPress(keyMap[e.key], 1.5, 150);
+    // LEFT SIDE (A / D)
+    if ((e.key === "a" || e.key === "A") && !switchingLeft) {
+        queuedLeftIndex = (leftIndex - 1 + leftCars.length) % leftCars.length;
+        switchingLeft = true;
+        leftIndexDir = -1;
+        carLeft.play();
+    }
+    if ((e.key === "d" || e.key === "D") && !switchingLeft) {
+        queuedLeftIndex = (leftIndex + 1) % leftCars.length;
+        switchingLeft = true;
+        leftIndexDir = 1;
+        carLeft.play();
+    }
+
+    // ESCAPE (Back to Menu)
+    if (e.key === "Escape" && inCarSelection && !goingBack) {
+        goingBack = true;
+        leftDone = false;
+        rightDone = false;
+        carLeft.play();
+        carRight.play();
+        return;
+    }
+
+    // RIGHT SIDE (Arrows)
+    if (e.key === "ArrowLeft" && !switchingRight) {
+        queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
+        switchingRight = true;
+        rightIndexDir = -1;
+        carRight.play();
+    }
+    if (e.key === "ArrowRight" && !switchingRight) {
+        queuedRightIndex = (rightIndex + 1) % rightCars.length;
+        switchingRight = true;
+        rightIndexDir = 1;
+        carRight.play();
+    }
+});
+function removeUi() {
+    uiElements.forEach(el => el.remove());
+}
