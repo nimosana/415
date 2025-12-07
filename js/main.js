@@ -35,6 +35,14 @@ let leftDone = false;
 let rightDone = false;
 let gameState = "menu";
 
+let p1Ready = false;
+let p2Ready = false;
+let p1ReadyUI = null;
+let p2ReadyUI = null;
+let countdownTimer = null;
+let countdownValue = 3;
+let countdownEl = null;
+
 const HALF = 0.5;
 
 introVideo.addEventListener("click", () => {
@@ -170,6 +178,14 @@ function checkBackDone() {
         goingBack = false;
         inCarSelection = false;
         removeUi();
+        if (p1ReadyUI) {
+            p1ReadyUI.remove();
+            p1ReadyUI = null;
+        }
+        if (p2ReadyUI) {
+            p2ReadyUI.remove();
+            p2ReadyUI = null;
+        }
         // Hide cars
         carLeft.style.display = "none";
         carRight.style.display = "none";
@@ -186,6 +202,139 @@ function checkBackDone() {
         // menuVideo.play();
         gameState = "menu";
     }
+}
+
+function setPlayerReady(player, ready) {
+    if (gameState !== "carSelection") return;
+    // Prevent toggling if countdown is active? 
+    // Actually spec says "unready" so we must support aborting.
+
+    if (player === 1) {
+        if (p1Ready === ready) return;
+        p1Ready = ready;
+        if (p1Ready) {
+            // Show UI
+            p1ReadyUI = createFloatingUIElement("assets/image/readied.webp", {
+                containerId: "videoContainer", left: 25, top: 80, scale: 0.2, fadeIn: true
+            });
+        } else {
+            // Hide UI
+            if (p1ReadyUI) {
+                p1ReadyUI.remove();
+                p1ReadyUI = null;
+            }
+        }
+    } else {
+        if (p2Ready === ready) return;
+        p2Ready = ready;
+        if (p2Ready) {
+            // Show UI
+            p2ReadyUI = createFloatingUIElement("assets/image/readied.webp", {
+                containerId: "videoContainer", left: 75, top: 80, scale: 0.2, fadeIn: true
+            });
+        } else {
+            // Hide UI
+            if (p2ReadyUI) {
+                p2ReadyUI.remove();
+                p2ReadyUI = null;
+            }
+        }
+    }
+
+    checkGameStart();
+}
+
+function checkGameStart() {
+    if (p1Ready && p2Ready) {
+        startCountdown();
+    } else {
+        cancelCountdown();
+    }
+}
+
+function startCountdown() {
+    if (countdownTimer) return; // Already running
+
+    countdownValue = 3;
+    const container = document.getElementById("videoContainer");
+
+    // Create countdown text element if not exists
+    if (!countdownEl) {
+        countdownEl = document.createElement("div");
+        countdownEl.style.position = "absolute";
+        countdownEl.style.left = "50%";
+        countdownEl.style.top = "50%";
+        countdownEl.style.transform = "translate(-50%, -50%)";
+        countdownEl.style.fontSize = "100px";
+        countdownEl.style.color = "white";
+
+        // Font style
+        if (window.googleFonts && window.googleFonts.primary) {
+            countdownEl.style.fontFamily = window.googleFonts.primary;
+        } else {
+            countdownEl.style.fontFamily = "Impact, sans-serif";
+        }
+
+        countdownEl.style.zIndex = "1000";
+        countdownEl.style.textShadow = "0 0 10px black";
+        container.appendChild(countdownEl);
+    }
+
+    countdownEl.innerText = countdownValue;
+    countdownEl.style.display = "block";
+
+    countdownTimer = setInterval(() => {
+        countdownValue--;
+        if (countdownValue > 0) {
+            countdownEl.innerText = countdownValue;
+        } else {
+            // START GAME
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            countdownEl.style.display = "none";
+            startGame();
+        }
+    }, 1000);
+}
+
+function cancelCountdown() {
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    if (countdownEl) {
+        countdownEl.style.display = "none";
+    }
+}
+
+function startGame() {
+    gameState = "inGame";
+    console.log("Game Started!");
+
+    // Hide car selection UI
+    removeUi();
+    if (p1ReadyUI) p1ReadyUI.remove();
+    if (p2ReadyUI) p2ReadyUI.remove();
+
+    carLeft.style.display = "none";
+    carRight.style.display = "none";
+
+    // Placeholder
+    const container = document.getElementById("videoContainer");
+    const placeholder = document.createElement("div");
+    placeholder.innerText = "IN GAME - CLICK TO RESET";
+    placeholder.style.position = "absolute";
+    placeholder.style.left = "50%";
+    placeholder.style.top = "50%";
+    placeholder.style.transform = "translate(-50%, -50%)";
+    placeholder.style.fontSize = "50px";
+    placeholder.style.color = "lime";
+    container.appendChild(placeholder);
+
+    // Temp: click to reset to menu
+    placeholder.onclick = () => {
+        location.reload();
+    };
 }
 
 // Hover animations
@@ -218,6 +367,7 @@ buttons.forEach(btn => {
 
 // Track intervals for cleanup
 const floatingUIRegistry = new Map();
+
 function createFloatingUIElement(src, opts) {
     const {
         containerId,
@@ -316,7 +466,7 @@ function showUi() {
         containerId: "videoContainer", left: 50, top: 77.5, scale: 0.06, fadeIn: true
     });
     let unreadyUI = createFloatingUIElement("assets/image/unready.webp", {
-        containerId: "videoContainer", left: 50, top: 82.5, scale: 0.06, fadeIn: true
+        containerId: "videoContainer", left: 50, top: 82.5, scale: 0.07, fadeIn: true
     });
 
     let aKeySwitch = createFloatingUIElement("assets/image/keys_A.webp", {
@@ -408,21 +558,35 @@ document.addEventListener("keydown", (e) => {
 
     animateKeyPress(keyMap[e.key], 1.5, 150);
     // LEFT SIDE (A / D)
-    if ((e.key === "a" || e.key === "A") && !switchingLeft) {
+    if ((e.key === "a" || e.key === "A") && !switchingLeft && !p1Ready) {
         queuedLeftIndex = (leftIndex - 1 + leftCars.length) % leftCars.length;
         switchingLeft = true;
         leftIndexDir = -1;
         carLeft.play();
     }
-    if ((e.key === "d" || e.key === "D") && !switchingLeft) {
+    if ((e.key === "d" || e.key === "D") && !switchingLeft && !p1Ready) {
         queuedLeftIndex = (leftIndex + 1) % leftCars.length;
         switchingLeft = true;
         leftIndexDir = 1;
         carLeft.play();
     }
 
+    if (e.key === "ArrowRight" && !switchingRight && !p2Ready) {
+        queuedRightIndex = (rightIndex + 1) % rightCars.length;
+        switchingRight = true;
+        rightIndexDir = 1;
+        carRight.play();
+    }
+    if (e.key === "ArrowLeft" && !switchingRight && !p2Ready) {
+        queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
+        switchingRight = true;
+        rightIndexDir = -1;
+        carRight.play();
+    }
     // ESCAPE (Back to Menu)
     if (e.key === "Escape" && inCarSelection && !goingBack) {
+        setPlayerReady(1, false);
+        setPlayerReady(2, false);
         goingBack = true;
         leftDone = false;
         rightDone = false;
@@ -431,18 +595,19 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
-    // RIGHT SIDE (Arrows)
-    if (e.key === "ArrowLeft" && !switchingRight) {
-        queuedRightIndex = (rightIndex - 1 + rightCars.length) % rightCars.length;
-        switchingRight = true;
-        rightIndexDir = -1;
-        carRight.play();
+    // P1 READY (W/S)
+    if ((e.key === "w" || e.key === "W") && !p1Ready && gameState === "carSelection" && !goingBack) {
+        setPlayerReady(1, true);
     }
-    if (e.key === "ArrowRight" && !switchingRight) {
-        queuedRightIndex = (rightIndex + 1) % rightCars.length;
-        switchingRight = true;
-        rightIndexDir = 1;
-        carRight.play();
+    if ((e.key === "s" || e.key === "S") && p1Ready && gameState === "carSelection" && !goingBack) {
+        setPlayerReady(1, false);
+    }
+    // P2 READY (Up/Down)
+    if (e.key === "ArrowUp" && !p2Ready && gameState === "carSelection" && !goingBack) {
+        setPlayerReady(2, true);
+    }
+    if (e.key === "ArrowDown" && p2Ready && gameState === "carSelection" && !goingBack) {
+        setPlayerReady(2, false);
     }
 });
 function removeUi() {
