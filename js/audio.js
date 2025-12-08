@@ -7,6 +7,7 @@ class Audio {
         "assets/audio/song1.mp3",
         "assets/audio/song2.mp3",
         "assets/audio/song3.mp3",
+        "assets/audio/song4.mp3"
     ];
 
     static bgm = document.getElementById("bgm");

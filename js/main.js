@@ -3,8 +3,8 @@ const idleSrc = 'assets/video/idleHTML.webm';
 const startSrc = 'assets/video/startHTML.webm';
 const tutorialSrc = 'assets/video/tutoHTML.webm';
 
-const leftCars = ["assets/video/car1L.webm", "assets/video/car2L.webm", "assets/video/car3L.webm"];
-const rightCars = ["assets/video/car1R.webm", "assets/video/car2R.webm", "assets/video/car3R.webm"];
+const leftCars = ["assets/video/car1L.webm", "assets/video/car2L.webm", "assets/video/car3L.webm", "assets/video/car4L.webm"];
+const rightCars = ["assets/video/car1R.webm", "assets/video/car2R.webm", "assets/video/car3R.webm", "assets/video/car4R.webm"];
 
 let introStarted = false;
 const introVideo = document.getElementById("introVideo");
@@ -329,6 +329,7 @@ function startGame() {
     placeholder.style.transform = "translate(-50%, -50%)";
     placeholder.style.fontSize = "50px";
     placeholder.style.color = "lime";
+    placeholder.style.zIndex = "1000";
     container.appendChild(placeholder);
 
     // Temp: click to reset to menu
