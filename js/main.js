@@ -319,23 +319,13 @@ function startGame() {
     carLeft.style.display = "none";
     carRight.style.display = "none";
 
-    // Placeholder
-    const container = document.getElementById("videoContainer");
-    const placeholder = document.createElement("div");
-    placeholder.innerText = "IN GAME - CLICK TO RESET";
-    placeholder.style.position = "absolute";
-    placeholder.style.left = "50%";
-    placeholder.style.top = "50%";
-    placeholder.style.transform = "translate(-50%, -50%)";
-    placeholder.style.fontSize = "50px";
-    placeholder.style.color = "lime";
-    placeholder.style.zIndex = "1000";
-    container.appendChild(placeholder);
-
-    // Temp: click to reset to menu
-    placeholder.onclick = () => {
-        location.reload();
-    };
+    // Init game logic
+    if (window.GameInstance) {
+        if (!window.GameInstance.canvas) {
+            window.GameInstance.init();
+        }
+        window.GameInstance.start(leftIndex, rightIndex);
+    }
 }
 
 // Hover animations
