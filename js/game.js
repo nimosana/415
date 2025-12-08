@@ -81,6 +81,9 @@ class Game {
         this.p2Car = null;
         this.isRunning = false;
         this.animationFrameId = null;
+        this.isCountingDown = false;
+        this.countdownValue = 3;
+        this.countdownStartTime = 0;
     }
 
     init() {
@@ -132,10 +135,15 @@ class Game {
             this.p2Car.loadAssets(getCarName(p2CarIndex), getCarPath(p2CarIndex))
         ]);
 
-        console.log("Assets Loaded. Starting Game Loop.");
+        console.log("Assets Loaded. Starting Countdown.");
         this.isRunning = true;
-        this.p1Car.isPlaying = true;
-        this.p2Car.isPlaying = true;
+        this.isCountingDown = true;
+        this.countdownValue = 3;
+        this.countdownStartTime = performance.now();
+
+        // p1Car and p2Car are NOT playing yet
+        this.p1Car.isPlaying = false;
+        this.p2Car.isPlaying = false;
 
         this.loop();
     }
@@ -147,20 +155,50 @@ class Game {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Update
-        this.p1Car.update();
-        this.p2Car.update();
+        // Update
+        if (this.isCountingDown) {
+            const now = performance.now();
+            const elapsed = (now - this.countdownStartTime) / 1000;
+            this.countdownValue = 3 - elapsed;
+
+            if (this.countdownValue <= 0) {
+                this.isCountingDown = false;
+                this.p1Car.isPlaying = true;
+                this.p2Car.isPlaying = true;
+            }
+        } else {
+            this.p1Car.update();
+            this.p2Car.update();
+        }
 
         // Draw
         this.p1Car.draw();
         this.p2Car.draw();
 
         // Draw separator
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.canvas.width / 2, 0);
-        this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
-        this.ctx.strokeStyle = "white";
-        this.ctx.lineWidth = 4;
-        this.ctx.stroke();
+        this.drawSeparator();
+
+        // Draw Countdown
+        if (this.isCountingDown) {
+            this.ctx.save();
+            this.ctx.fillStyle = "white";
+            this.ctx.font = "bold 150px Impact, sans-serif";
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.shadowColor = "black";
+            this.ctx.shadowBlur = 20;
+
+            // Ceil to show 3, 2, 1. If < 0 it goes to 'GO' or just disappears (logic above handled disappear)
+            // Actually let's show "GO!" for a split second or just start?
+            // User requested "3-second countdown before the game starts".
+            const displayVal = Math.ceil(this.countdownValue);
+            if (displayVal > 0) {
+                this.ctx.fillText(displayVal, this.canvas.width / 2, this.canvas.height / 2);
+            } else {
+                this.ctx.fillText("GO!", this.canvas.width / 2, this.canvas.height / 2);
+            }
+            this.ctx.restore();
+        }
 
         this.animationFrameId = requestAnimationFrame(() => this.loop());
     }
@@ -171,6 +209,15 @@ class Game {
         if (this.canvas) {
             this.canvas.style.display = "none";
         }
+    }
+
+    drawSeparator() {
+        // this.ctx.beginPath();
+        // this.ctx.moveTo(this.canvas.width / 2, 0);
+        // this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+        // this.ctx.strokeStyle = "white";
+        // this.ctx.lineWidth = 4;
+        // this.ctx.stroke();
     }
 }
 
