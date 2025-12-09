@@ -600,7 +600,116 @@ class Game {
         this.animationFrameId = requestAnimationFrame(() => this.loop());
     }
 
+    createFloatingElement(src, opts) {
+        const {
+            containerId,
+            left,
+            top,
+            scale = 0.1,
+            fadeIn = true,
+            opacity = 1,
+            textText = null, // Optional text to overlay
+            onClick = null   // Optional click handler
+        } = opts;
+
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+
+        // Container for the floating element (allows grouping text + image)
+        const wrapper = document.createElement("div");
+        wrapper.style.position = "absolute";
+        wrapper.style.left = typeof left === "number" ? `${left}%` : left;
+        wrapper.style.top = typeof top === "number" ? `${top}%` : top;
+        wrapper.style.opacity = fadeIn ? 0 : opacity;
+        wrapper.style.transform = "translate(-50%, -50%)";
+        wrapper.style.zIndex = "601";
+        if (onClick) {
+            wrapper.style.cursor = "pointer";
+            wrapper.onclick = onClick;
+        }
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.style.display = "block";
+        img.style.width = "100%";
+        img.style.height = "auto";
+        wrapper.appendChild(img);
+
+        let textEl = null;
+        if (textText) {
+            textEl = document.createElement("div");
+            textEl.innerText = textText;
+            textEl.style.position = "absolute";
+            textEl.style.top = "50%";
+            textEl.style.left = "50%";
+            textEl.style.transform = "translate(-50%, -50%)";
+            textEl.style.textAlign = "center";
+            textEl.style.color = "white";
+            textEl.style.fontFamily = "Impact, sans-serif";
+            // Font size needs to scale with the image/container, but for now fixed relative or handled below
+            textEl.style.fontSize = "2vw"; // Responsive font size
+            textEl.style.textShadow = "0px 0px 5px black";
+            textEl.style.whiteSpace = "nowrap";
+            wrapper.appendChild(textEl);
+        }
+
+        container.appendChild(wrapper);
+
+        // Initial sizing
+        const updateSize = () => {
+            const containerWidth = container.offsetWidth;
+            const newWidth = containerWidth * scale;
+            wrapper.style.width = `${newWidth}px`;
+
+            if (textEl) {
+                // Adjust font size specifically if needed, but vw might suffice
+                // textEl.style.fontSize = `${newWidth * 0.2}px`; // Example scaling
+            }
+        };
+
+        // Wait for image to load for Aspect Ratio (optional, but good practice)
+        img.onload = () => {
+            updateSize();
+            if (fadeIn) {
+                wrapper.style.transition = "opacity 0.5s";
+                wrapper.style.transition = "transform 0.5s";
+                requestAnimationFrame(() => {
+                    wrapper.style.opacity = opacity;
+                });
+            }
+        };
+        // Run immediately in case cached
+        if (img.complete) {
+            updateSize();
+            if (fadeIn) wrapper.style.opacity = opacity;
+        }
+
+        const resizeObserver = new ResizeObserver(updateSize);
+        resizeObserver.observe(container);
+
+        // Animation Loop
+        const interval = setInterval(() => {
+            const r = Math.random() * 5 - 2;
+            const s = 1 + (Math.random() * 0.1 - 0.05);
+            // Apply transform to the wrapper
+            // IMPORTANT: maintain centering translate
+            wrapper.style.transform = `translate(-50%, -50%) rotate(${r}deg) scale(${s})`;
+        }, 1000);
+
+        return {
+            element: wrapper,
+            interval: interval,
+            resizeObserver: resizeObserver,
+            remove() {
+                clearInterval(interval);
+                resizeObserver.disconnect();
+                wrapper.remove();
+            }
+        };
+    }
+
     handleWin(winner, finalTime) {
+
         const winningCarIndex = winner === 1 ? this.p1CarIndex : this.p2CarIndex;
         const carNum = winningCarIndex + 1; // 0-based index to 1-based suffix
 
@@ -621,39 +730,28 @@ class Game {
 
         container.appendChild(this.winVideo);
 
-        // Return Button
-        this.returnBtn = document.createElement("img");
-        this.returnBtn.src = "assets/image/return.webp";
-        this.returnBtn.style.position = "absolute";
-        // Bottom Right
-        this.returnBtn.style.bottom = "10%";
-        this.returnBtn.style.right = "10%";
-        this.returnBtn.style.width = "10%"; // Or specific pixel size
-        this.returnBtn.style.height = "auto";
-        this.returnBtn.style.zIndex = "601";
-        this.returnBtn.style.cursor = "pointer";
+        // Return Button (Floating)
+        this.returnBtn = this.createFloatingElement("assets/image/return.webp", {
+            containerId: "videoContainer",
+            left: 90,
+            top: 90, // Bottom-Right area
+            scale: 0.1,
+            fadeIn: true,
+            onClick: () => {
+                this.cleanup();
+                if (this.onGameEnd) this.onGameEnd();
+            }
+        });
 
-        this.returnBtn.onclick = () => {
-            this.cleanup();
-            if (this.onGameEnd) this.onGameEnd();
-        };
-
-        container.appendChild(this.returnBtn);
-
-        // Final Time Display
-        this.timeDisplay = document.createElement("div");
-        this.timeDisplay.innerText = "TIME: " + this.formatTime(finalTime);
-        this.timeDisplay.style.position = "absolute";
-        this.timeDisplay.style.bottom = "20%"; // A bit above the return button
-        this.timeDisplay.style.left = "50%";
-        this.timeDisplay.style.transform = "translateX(-50%)";
-        this.timeDisplay.style.color = "white";
-        this.timeDisplay.style.fontFamily = "Impact, sans-serif";
-        this.timeDisplay.style.fontSize = "60px";
-        this.timeDisplay.style.textShadow = "0px 0px 20px black";
-        this.timeDisplay.style.zIndex = "601";
-
-        container.appendChild(this.timeDisplay);
+        // Time Display (Floating with Placeholder Background)
+        this.timeDisplay = this.createFloatingElement("assets/image/placeholder.webp", {
+            containerId: "videoContainer",
+            left: 50,
+            top: 80, // Bottom Center area
+            scale: 0.25, // Wider for text
+            fadeIn: true,
+            textText: "TIME: " + this.formatTime(finalTime)
+        });
     }
 
     cleanup() {
