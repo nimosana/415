@@ -375,6 +375,7 @@ class Game {
         this.returnBtn = null;
         this.p1CarIndex = 0;
         this.p2CarIndex = 1;
+        this.countdownAssets = [];
     }
 
     init() {
@@ -460,7 +461,9 @@ class Game {
             this.p1Car.loadAssets(getCarName(p1CarIndex), getCarPath(p1CarIndex)),
             this.p2Car.loadAssets(getCarName(p2CarIndex), getCarPath(p2CarIndex)),
             this.p1Rhythm.loadAssets(),
-            this.p2Rhythm.loadAssets()
+            this.p1Rhythm.loadAssets(),
+            this.p2Rhythm.loadAssets(),
+            this.loadCountdownAssets()
         ]);
 
         console.log("Assets Loaded. Starting Countdown.");
@@ -481,6 +484,23 @@ class Game {
         document.addEventListener("keyup", this.keyUpHandler);
 
         this.loop();
+    }
+
+    async loadCountdownAssets() {
+        const promises = [0, 1, 2, 3].map(i => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve({ index: i, img });
+                img.onerror = () => resolve({ index: i, img: null });
+                img.src = `assets/image/countdown${i}.webp`;
+            });
+        });
+
+        const results = await Promise.all(promises);
+        this.countdownAssets = new Array(4);
+        results.forEach(r => {
+            this.countdownAssets[r.index] = r.img;
+        });
     }
 
     formatTime(ms) {
@@ -527,6 +547,27 @@ class Game {
                 this.p1Car.isPlaying = true;
                 this.p2Car.isPlaying = true;
                 this.raceStartTime = performance.now();
+
+                // Show GO!
+                const goNotif = this.createFloatingElement("assets/image/countdown0.webp", {
+                    containerId: "videoContainer",
+                    left: 50,
+                    top: 50,
+                    scale: 0.15,
+                    fadeIn: false
+                });
+
+                // Start fade out after 500ms
+                setTimeout(() => {
+                    if (goNotif && goNotif.element) {
+                        goNotif.element.style.transition = "opacity 0.5s";
+                        goNotif.element.style.opacity = "0";
+                    }
+                }, 500);
+
+                setTimeout(() => {
+                    if (goNotif) goNotif.remove();
+                }, 1000);
             }
         } else {
             // Update Timer
@@ -569,20 +610,26 @@ class Game {
 
         if (this.isCountingDown) {
             this.ctx.save();
-            this.ctx.fillStyle = "white";
-            this.ctx.font = "bold 150px Impact, sans-serif";
-            this.ctx.textAlign = "center";
-            this.ctx.textBaseline = "middle";
-            this.ctx.shadowColor = "black";
-            this.ctx.shadowBlur = 20;
+            const displayVal = Math.ceil(this.countdownValue); // 3, 2, 1
+            let imgToDraw = null;
 
-            const displayVal = Math.ceil(this.countdownValue);
-            if (displayVal > 0) {
-                this.ctx.fillText(displayVal, this.canvas.width / 2, this.canvas.height / 2);
-            } else {
-                this.ctx.fillText("GO!", this.canvas.width / 2, this.canvas.height / 2);
+            if (displayVal > 0 && displayVal <= 3) {
+                imgToDraw = this.countdownAssets[displayVal];
             }
-            this.ctx.restore();
+
+            if (imgToDraw) {
+                // Draw centered
+                const cw = this.canvas.width;
+                const ch = this.canvas.height;
+                const scale = 0.15; // Adjust as needed
+                const iw = cw * scale;
+                const ih = iw * (imgToDraw.height / imgToDraw.width);
+
+                this.ctx.shadowColor = "black";
+                this.ctx.shadowBlur = 20;
+                this.ctx.drawImage(imgToDraw, cw / 2 - iw / 2, ch / 2 - ih / 2, iw, ih);
+            }
+
             this.ctx.restore();
         } else if (!this.winner) {
             // Draw Timer
@@ -609,7 +656,9 @@ class Game {
             fadeIn = true,
             opacity = 1,
             textText = null, // Optional text to overlay
-            onClick = null   // Optional click handler
+            onClick = null,  // Optional click handler
+            textColor = "white",
+            fontFamily = "Impact, sans-serif"
         } = opts;
 
         const container = document.getElementById(containerId);
@@ -644,11 +693,11 @@ class Game {
             textEl.style.left = "50%";
             textEl.style.transform = "translate(-50%, -50%)";
             textEl.style.textAlign = "center";
-            textEl.style.color = "white";
-            textEl.style.fontFamily = "Impact, sans-serif";
+            textEl.style.color = textColor;
+            textEl.style.fontFamily = fontFamily;
             // Font size needs to scale with the image/container, but for now fixed relative or handled below
             textEl.style.fontSize = "2vw"; // Responsive font size
-            textEl.style.textShadow = "0px 0px 5px black";
+            // textEl.style.textShadow = "0px 0px 5px black";
             textEl.style.whiteSpace = "nowrap";
             wrapper.appendChild(textEl);
         }
@@ -748,9 +797,11 @@ class Game {
             containerId: "videoContainer",
             left: 50,
             top: 80, // Bottom Center area
-            scale: 0.21, // Wider for text
+            scale: 0.25, // Wider for text
             fadeIn: true,
-            textText: "TIME: " + this.formatTime(finalTime)
+            textText: "TIME: " + this.formatTime(finalTime),
+            textColor: "black",
+            fontFamily: '"Comic Sans MS", "Comic Sans", cursive'
         });
     }
 

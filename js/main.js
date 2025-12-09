@@ -69,9 +69,16 @@ introVideo.addEventListener("ended", () => {
     menuVideo.style.display = "block";
     btnStart.style.display = "block";
     btnTutorial.style.display = "block";
-    if (window.GameAudio) {
-        GameAudio.showNotification("assets/audio/skip.webp");
-    }
+    const skipNotif = createFloatingUIElement("assets/audio/skip.webp", {
+        containerId: "videoContainer",
+        left: 85,
+        top: 15,
+        scale: 0.2,
+        fadeIn: true
+    });
+    setTimeout(() => {
+        if (skipNotif) skipNotif.remove();
+    }, 3000);
 
     menuVideo.play();
 });
@@ -210,10 +217,16 @@ function showMenu() {
     menuVideo.play(); // Ensure play
     gameState = "menu";
 
-    // Show audio instruction
-    if (window.GameAudio) {
-        GameAudio.showNotification("assets/audio/skip.webp");
-    }
+    const skipNotif = createFloatingUIElement("assets/audio/skip.webp", {
+        containerId: "videoContainer",
+        left: 85,
+        top: 15,
+        scale: 0.2,
+        fadeIn: true
+    });
+    setTimeout(() => {
+        if (skipNotif) skipNotif.remove();
+    }, 3000);
 
     // Reset flags
     loadingRN = false;
