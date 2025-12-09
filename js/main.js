@@ -42,6 +42,7 @@ let p2ReadyUI = null;
 let spaceListenerAttached = false;
 let pressSpaceUI = null;
 
+let loadingRN = false;
 const HALF = 0.5;
 
 introVideo.addEventListener("click", () => {
@@ -114,14 +115,14 @@ btnStart.addEventListener('click', () => {
 // LIMITER — Freeze at 50% when idle
 // -------------------------------
 carLeft.addEventListener("timeupdate", () => {
-    if (!switchingLeft && !goingBack && carLeft.currentTime > carLeft.duration * HALF) {
+    if (!loadingRN && !switchingLeft && !goingBack && carLeft.currentTime > carLeft.duration * HALF) {
         carLeft.pause();
         carLeft.currentTime = carLeft.duration * HALF;
     }
 });
 
 carRight.addEventListener("timeupdate", () => {
-    if (!switchingRight && !goingBack && carRight.currentTime > carRight.duration * HALF) {
+    if (!loadingRN && !switchingRight && !goingBack && carRight.currentTime > carRight.duration * HALF) {
         carRight.pause();
         carRight.currentTime = carRight.duration * HALF;
     }
@@ -286,7 +287,7 @@ function handleSpaceStart(e) {
     }
 }
 
-function startGame() {
+async function startGame() {
     gameState = "inGame";
     console.log("Game Started!");
 
@@ -295,16 +296,33 @@ function startGame() {
     if (p1ReadyUI) p1ReadyUI.remove();
     if (p2ReadyUI) p2ReadyUI.remove();
 
-    carLeft.style.display = "none";
-    carRight.style.display = "none";
+    // Show Loading UI
+    const loadingUI = createFloatingUIElement("assets/image/loading.png", {
+        containerId: "videoContainer", left: 50, top: 50, scale: 0.2, fadeIn: true
+    });
+    loadingRN = true;
+    // Resume car videos to play during load
+    carLeft.play().catch(e => console.log(e));
+    carRight.play().catch(e => console.log(e));
 
     // Init game logic
     if (window.GameInstance) {
         if (!window.GameInstance.canvas) {
             window.GameInstance.init();
         }
-        window.GameInstance.start(leftIndex, rightIndex);
+        // Wait for assets to load
+        await window.GameInstance.start(leftIndex, rightIndex);
     }
+
+    // Load complete: Hide Loading UI and Car Videos
+    if (loadingUI) loadingUI.remove();
+    carLeft.style.display = "none";
+    carRight.style.display = "none";
+
+    // Pause them to save resources (though display none might be enough, good practice)
+    carLeft.pause();
+    carRight.pause();
+    loadingRN = false;
 }
 
 // Hover animations
