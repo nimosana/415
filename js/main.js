@@ -177,31 +177,45 @@ function checkBackDone() {
     if (leftDone && rightDone) {
         goingBack = false;
         inCarSelection = false;
-        removeUi();
-        if (p1ReadyUI) {
-            p1ReadyUI.remove();
-            p1ReadyUI = null;
-        }
-        if (p2ReadyUI) {
-            p2ReadyUI.remove();
-            p2ReadyUI = null;
-        }
-        // Hide cars
-        carLeft.style.display = "none";
-        carRight.style.display = "none";
-
-        // Show menu
-        menuVideo.style.display = "block";
-        btnStart.style.display = "block";
-        btnTutorial.style.display = "block";
-
-        // Reset menu video to idle
-        // menuVideo.src = idleSrc;
-        menuVideo.loop = true;
-        menuVideo.currentTime = 0;
-        // menuVideo.play();
-        gameState = "menu";
+        showMenu();
     }
+}
+
+function showMenu() {
+    removeUi();
+    if (p1ReadyUI) {
+        p1ReadyUI.remove();
+        p1ReadyUI = null;
+    }
+    if (p2ReadyUI) {
+        p2ReadyUI.remove();
+        p2ReadyUI = null;
+    }
+    // Hide cars
+    carLeft.style.display = "none";
+    carRight.style.display = "none";
+
+    // Show menu
+    menuVideo.style.display = "block";
+    btnStart.style.display = "block";
+    btnTutorial.style.display = "block";
+
+    // Reset menu video to idle
+    // menuVideo.src = idleSrc;
+    menuVideo.loop = true;
+    menuVideo.currentTime = 0;
+    menuVideo.play(); // Ensure play
+    gameState = "menu";
+
+    // Show audio instruction
+    if (window.Audio) {
+        Audio.showNotification("assets/image/placeholder.webp");
+    }
+
+    // Reset flags
+    loadingRN = false;
+    p1Ready = false;
+    p2Ready = false;
 }
 
 function setPlayerReady(player, ready) {
@@ -311,7 +325,7 @@ async function startGame() {
             window.GameInstance.init();
         }
         // Wait for assets to load
-        await window.GameInstance.start(leftIndex, rightIndex);
+        await window.GameInstance.start(leftIndex, rightIndex, showMenu);
     }
 
     // Load complete: Hide Loading UI and Car Videos

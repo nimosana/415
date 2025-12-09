@@ -169,35 +169,25 @@ class RhythmController {
         }
     }
 
-    // Helper to get position for a specific key
     getKeyPosition(key) {
         const k = key.toUpperCase();
         let dx = 0;
         let dy = 0;
+        const offset = 60;
 
-        // Config
-        const spreadX = 70;
-        const spreadY = 30;
-
-        // Left
+        // "Crosshair" Layout
         if (k === 'A' || k === 'ARROWLEFT') {
-            dx = -spreadX * 2;
-            // dy = spreadY / 2 + 10;
-        }
-        // Right
-        else if (k === 'D' || k === 'ARROWRIGHT') {
-            dx = spreadX;
-            // dy = spreadY / 2 + 10;
-        }
-        // Up
-        else if (k === 'W' || k === 'ARROWUP') {
-            dx = -spreadX;
-            // dy = -spreadY / 2 - 10;
-        }
-        // Down
-        else if (k === 'S' || k === 'ARROWDOWN') {
-            dx = spreadX * 2;
-            // dy = spreadY / 2 + 10;
+            dx = -offset;
+            dy = 0;
+        } else if (k === 'D' || k === 'ARROWRIGHT') {
+            dx = offset;
+            dy = 0;
+        } else if (k === 'W' || k === 'ARROWUP') {
+            dx = 0;
+            dy = -offset;
+        } else if (k === 'S' || k === 'ARROWDOWN') {
+            dx = 0;
+            dy = offset;
         }
 
         return {
@@ -218,7 +208,6 @@ class RhythmController {
         }
 
         if (requiredKeys.size === 0) {
-            // Penalize holding keys when none are needed
             this.isCorrect = (this.currentInputs.size === 0);
             return;
         }
@@ -240,6 +229,14 @@ class RhythmController {
 
     draw(currentFrame) {
         if (!this.loaded) return;
+
+        this.ctx.save();
+        // Clip to player area
+        // this.x is center. this.width is full width.
+        // Left Edge: this.x - this.width / 2
+        this.ctx.beginPath();
+        this.ctx.rect(this.x - this.width / 2, 0, this.width, this.height);
+        this.ctx.clip();
 
         // 1. Draw Static Targets
         this.availableKeys.forEach((k) => {
@@ -268,21 +265,70 @@ class RhythmController {
 
             const k = note.key.toUpperCase();
             const pos = this.getKeyPosition(k);
-            const x = pos.x;
+            const targetX = pos.x;
             const targetY = pos.y;
             const img = this.keyAssets[note.key];
 
-            // Calculate Y range
-            // Dist from target
             const distHead = (note.start - currentFrame) * this.pixelsPerFrame;
-            const yHead = targetY + distHead;
-
             const distTail = (note.end - currentFrame) * this.pixelsPerFrame;
-            const yTail = targetY + distTail;
 
-            const trailW = 20;
-            this.ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-            this.ctx.fillRect(x - trailW / 2, yHead, trailW, yTail - yHead);
+            let xHead = targetX;
+            let yHead = targetY;
+
+            let isVertical = false;
+
+            if (k === 'W' || k === 'ARROWUP') {
+                // Comes from TOP (moves DOWN)
+                yHead = targetY - distHead;
+                if (yHead > targetY) yHead = targetY; // Sticky
+
+                const yTail = targetY - distTail;
+
+                isVertical = true;
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                if (yTail < yHead) {
+                    this.ctx.fillRect(targetX - 10, yTail, 20, yHead - yTail);
+                }
+
+            } else if (k === 'S' || k === 'ARROWDOWN') {
+                // Comes from BOTTOM (moves UP)
+                yHead = targetY + distHead;
+                if (yHead < targetY) yHead = targetY; // Sticky
+
+                const yTail = targetY + distTail;
+
+                isVertical = true;
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                if (yTail > yHead) {
+                    this.ctx.fillRect(targetX - 10, yHead, 20, yTail - yHead);
+                }
+
+            } else if (k === 'A' || k === 'ARROWLEFT') {
+                // Comes from LEFT (moves RIGHT)
+                xHead = targetX - distHead;
+                if (xHead > targetX) xHead = targetX;
+
+                const xTail = targetX - distTail;
+
+                isVertical = false;
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                if (xTail < xHead) {
+                    this.ctx.fillRect(xTail, targetY - 10, xHead - xTail, 20);
+                }
+
+            } else if (k === 'D' || k === 'ARROWRIGHT') {
+                // Comes from RIGHT (moves LEFT)
+                xHead = targetX + distHead;
+                if (xHead < targetX) xHead = targetX;
+
+                const xTail = targetX + distTail;
+
+                isVertical = false;
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                if (xTail > xHead) {
+                    this.ctx.fillRect(xHead, targetY - 10, xTail - xHead, 20);
+                }
+            }
 
             if (img) {
                 if (currentFrame >= note.start && currentFrame <= note.end) {
@@ -293,12 +339,13 @@ class RhythmController {
                 }
 
                 this.ctx.globalAlpha = 1.0;
-                this.ctx.drawImage(img, x - 25, yHead - 25, 50, 50);
+                this.ctx.drawImage(img, xHead - 25, yHead - 25, 50, 50);
                 this.ctx.shadowBlur = 0;
             }
         }
 
-        this.ctx.restore();
+        this.ctx.restore(); // Restore clipping
+        this.ctx.restore(); // Restore specific draw settings (if any, though previous restore was inside loop)
     }
 }
 
@@ -322,6 +369,12 @@ class Game {
 
         this.inputHandler = this.handleInput.bind(this);
         this.keyUpHandler = this.handleKeyUp.bind(this);
+
+        this.onGameEnd = null;
+        this.winVideo = null;
+        this.returnBtn = null;
+        this.p1CarIndex = 0;
+        this.p2CarIndex = 1;
     }
 
     init() {
@@ -370,7 +423,11 @@ class Game {
         });
     }
 
-    async start(p1CarIndex, p2CarIndex) {
+    async start(p1CarIndex, p2CarIndex, onGameEnd) {
+        this.onGameEnd = onGameEnd;
+        this.p1CarIndex = p1CarIndex;
+        this.p2CarIndex = p2CarIndex;
+
         this.canvas.style.display = "block";
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -394,9 +451,10 @@ class Game {
         const p2Map = this.getMappedBeatmap(getCarName(p2CarIndex), false);
 
         // Init Rhythm Controllers
-        // Fixed Top Y = 70 (bit lower to accommodate offsets)
-        this.p1Rhythm = new RhythmController(this.ctx, w / 2, 70, w, h, p1Keys, p1Map);
-        this.p2Rhythm = new RhythmController(this.ctx, w + w / 2, 70, w, h, p2Keys, p2Map);
+        // Center Vertically
+        const centerY = h / 2;
+        this.p1Rhythm = new RhythmController(this.ctx, w / 2, centerY, w, h, p1Keys, p1Map);
+        this.p2Rhythm = new RhythmController(this.ctx, w + w / 2, centerY, w, h, p2Keys, p2Map);
 
         await Promise.all([
             this.p1Car.loadAssets(getCarName(p1CarIndex), getCarPath(p1CarIndex)),
@@ -410,7 +468,11 @@ class Game {
         this.isCountingDown = true;
         this.winner = null;
         this.countdownValue = 3;
+        this.countdownValue = 3;
         this.countdownStartTime = performance.now();
+        this.raceStartTime = null;
+        this.elapsedTime = 0;
+        this.timeDisplay = null;
 
         this.p1Car.isPlaying = false;
         this.p2Car.isPlaying = false;
@@ -419,6 +481,14 @@ class Game {
         document.addEventListener("keyup", this.keyUpHandler);
 
         this.loop();
+    }
+
+    formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const milliseconds = Math.floor(ms % 1000);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
     }
 
     handleInput(e) {
@@ -456,8 +526,12 @@ class Game {
                 this.isCountingDown = false;
                 this.p1Car.isPlaying = true;
                 this.p2Car.isPlaying = true;
+                this.raceStartTime = performance.now();
             }
         } else {
+            // Update Timer
+            this.elapsedTime = performance.now() - this.raceStartTime;
+
             // Update Rhythm based on CURRENT FRAME of the video
             this.p1Rhythm.update(this.p1Car.currentFrame);
             this.p2Rhythm.update(this.p2Car.currentFrame);
@@ -475,7 +549,9 @@ class Game {
                 else if (this.p2Car.isFinished()) this.winner = 2;
 
                 if (this.winner !== null) {
-                    console.log(`Player ${this.winner} wins!`);
+                    this.isRunning = false;
+                    this.handleWin(this.winner, this.elapsedTime);
+                    return; // Stop processing loop
                 }
             }
         }
@@ -484,7 +560,7 @@ class Game {
         this.p1Car.draw();
         this.p2Car.draw();
 
-        if (!this.isCountingDown && !this.winner) {
+        if (!this.winner) {
             this.p1Rhythm.draw(this.p1Car.currentFrame);
             this.p2Rhythm.draw(this.p2Car.currentFrame);
         }
@@ -507,21 +583,98 @@ class Game {
                 this.ctx.fillText("GO!", this.canvas.width / 2, this.canvas.height / 2);
             }
             this.ctx.restore();
-        }
-
-        if (this.winner !== null) {
+            this.ctx.restore();
+        } else if (!this.winner) {
+            // Draw Timer
             this.ctx.save();
-            this.ctx.fillStyle = this.winner === 1 ? "#00ffff" : "#ff00ff"; // Just some colors
-            this.ctx.font = "bold 100px Impact, sans-serif";
+            this.ctx.fillStyle = "white";
+            this.ctx.font = "bold 40px Impact, sans-serif";
             this.ctx.textAlign = "center";
-            this.ctx.textBaseline = "middle";
+            this.ctx.textBaseline = "top";
             this.ctx.shadowColor = "black";
-            this.ctx.shadowBlur = 20;
-            this.ctx.fillText(`PLAYER ${this.winner} WINS!`, this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.shadowBlur = 10;
+            this.ctx.fillText(this.formatTime(this.elapsedTime), this.canvas.width / 2, 20);
             this.ctx.restore();
         }
 
         this.animationFrameId = requestAnimationFrame(() => this.loop());
+    }
+
+    handleWin(winner, finalTime) {
+        const winningCarIndex = winner === 1 ? this.p1CarIndex : this.p2CarIndex;
+        const carNum = winningCarIndex + 1; // 0-based index to 1-based suffix
+
+        const container = document.getElementById("videoContainer");
+
+        // Win Video
+        this.winVideo = document.createElement("video");
+        this.winVideo.src = `assets/video/car${carNum}win.webm`;
+        this.winVideo.style.position = "absolute";
+        this.winVideo.style.top = "0";
+        this.winVideo.style.left = "0";
+        this.winVideo.style.width = "100%";
+        this.winVideo.style.height = "100%";
+        this.winVideo.style.objectFit = "cover"; // Maintain aspect ratio
+        this.winVideo.style.zIndex = "600";
+        this.winVideo.autoplay = true;
+        this.winVideo.loop = false;
+
+        container.appendChild(this.winVideo);
+
+        // Return Button
+        this.returnBtn = document.createElement("img");
+        this.returnBtn.src = "assets/image/return.webp";
+        this.returnBtn.style.position = "absolute";
+        // Bottom Right
+        this.returnBtn.style.bottom = "10%";
+        this.returnBtn.style.right = "10%";
+        this.returnBtn.style.width = "10%"; // Or specific pixel size
+        this.returnBtn.style.height = "auto";
+        this.returnBtn.style.zIndex = "601";
+        this.returnBtn.style.cursor = "pointer";
+
+        this.returnBtn.onclick = () => {
+            this.cleanup();
+            if (this.onGameEnd) this.onGameEnd();
+        };
+
+        container.appendChild(this.returnBtn);
+
+        // Final Time Display
+        this.timeDisplay = document.createElement("div");
+        this.timeDisplay.innerText = "TIME: " + this.formatTime(finalTime);
+        this.timeDisplay.style.position = "absolute";
+        this.timeDisplay.style.bottom = "20%"; // A bit above the return button
+        this.timeDisplay.style.left = "50%";
+        this.timeDisplay.style.transform = "translateX(-50%)";
+        this.timeDisplay.style.color = "white";
+        this.timeDisplay.style.fontFamily = "Impact, sans-serif";
+        this.timeDisplay.style.fontSize = "60px";
+        this.timeDisplay.style.textShadow = "0px 0px 20px black";
+        this.timeDisplay.style.zIndex = "601";
+
+        container.appendChild(this.timeDisplay);
+    }
+
+    cleanup() {
+        if (this.winVideo) {
+            this.winVideo.remove();
+            this.winVideo = null;
+        }
+        if (this.returnBtn) {
+            this.returnBtn.remove();
+            this.returnBtn = null;
+        }
+        if (this.timeDisplay) {
+            this.timeDisplay.remove();
+            this.timeDisplay = null;
+        }
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvas.style.display = "none";
+        this.isRunning = false;
+        cancelAnimationFrame(this.animationFrameId);
+        document.removeEventListener("keydown", this.inputHandler);
+        document.removeEventListener("keyup", this.keyUpHandler);
     }
 
     stop() {
