@@ -1,3 +1,28 @@
+// Beatmap Templates
+// Define the start and end frame for each key press.
+// Available Keys: 'UP', 'DOWN', 'LEFT', 'RIGHT'
+const CAR_BEATMAPS = {
+    car1: [
+        // Example: { key: 'UP', start: 50, end: 100 },
+        { key: 'UP', start: 0, end: 40 }, { key: 'UP', start: 60, end: 90 }, { key: 'UP', start: 120, end: 140 }, { key: 'UP', start: 165, end: 300 }, { key: 'UP', start: 400, end: 650 }, { key: 'UP', start: 675, end: 700 }, { key: 'UP', start: 720, end: 760 }, { key: 'UP', start: 790, end: 825 }, { key: 'UP', start: 850, end: 872 },
+        { key: 'DOWN', start: 40, end: 60 }, { key: 'DOWN', start: 90, end: 120 }, { key: 'DOWN', start: 140, end: 165 }, { key: 'DOWN', start: 300, end: 350 }, { key: 'DOWN', start: 375, end: 400 }, { key: 'DOWN', start: 700, end: 720 }, { key: 'DOWN', start: 760, end: 790 }, { key: 'DOWN', start: 825, end: 850 },
+        { key: 'RIGHT', start: 40, end: 60 }, { key: 'RIGHT', start: 90, end: 165 }, { key: 'RIGHT', start: 300, end: 350 }, { key: 'RIGHT', start: 440, end: 570 }, { key: 'RIGHT', start: 720, end: 760 }, { key: 'RIGHT', start: 820, end: 850 },
+        { key: 'LEFT', start: 60, end: 90 }, { key: 'LEFT', start: 165, end: 265 }, { key: 'LEFT', start: 350, end: 440 }, { key: 'LEFT', start: 570, end: 720 }, { key: 'LEFT', start: 760, end: 820 }, { key: 'LEFT', start: 850, end: 872 },
+    ],
+    car2: [
+        { key: 'UP', start: 0, end: 60 }, { key: 'UP', start: 110, end: 180 }, { key: 'UP', start: 200, end: 350 }, { key: 'UP', start: 375, end: 430 }, { key: 'UP', start: 450, end: 675 }, { key: 'UP', start: 700, end: 740 }, { key: 'UP', start: 780, end: 820 }, { key: 'UP', start: 850, end: 872 },
+        { key: 'DOWN', start: 60, end: 90 }, { key: 'DOWN', start: 180, end: 200 }, { key: 'DOWN', start: 350, end: 375 }, { key: 'DOWN', start: 740, end: 780 }, { key: 'DOWN', start: 820, end: 850 },
+        { key: 'RIGHT', start: 40, end: 60 }, { key: 'RIGHT', start: 135, end: 190 }, { key: 'RIGHT', start: 330, end: 375 }, { key: 'RIGHT', start: 510, end: 560 }, { key: 'RIGHT', start: 740, end: 780 }, { key: 'RIGHT', start: 810, end: 850 },
+        { key: 'LEFT', start: 60, end: 135 }, { key: 'LEFT', start: 190, end: 300 }, { key: 'LEFT', start: 375, end: 510 }, { key: 'LEFT', start: 560, end: 710 }, { key: 'LEFT', start: 780, end: 810 }, { key: 'LEFT', start: 850, end: 872 },
+    ],
+    car3: [
+        { key: 'UP', start: 0, end: 40 }, { key: 'UP', start: 70, end: 120 }, { key: 'UP', start: 140, end: 180 }, { key: 'UP', start: 200, end: 330 }, { key: 'UP', start: 360, end: 430 }, { key: 'UP', start: 450, end: 710 }, { key: 'UP', start: 790, end: 810 }, { key: 'UP', start: 840, end: 872 },
+        { key: 'DOWN', start: 40, end: 70 }, { key: 'DOWN', start: 120, end: 140 }, { key: 'DOWN', start: 330, end: 360 }, { key: 'DOWN', start: 750, end: 790 },
+        { key: 'RIGHT', start: 40, end: 70 }, { key: 'RIGHT', start: 140, end: 200 }, { key: 'RIGHT', start: 330, end: 360 }, { key: 'RIGHT', start: 480, end: 530 }, { key: 'RIGHT', start: 740, end: 780 }, { key: 'RIGHT', start: 800, end: 840 },
+        { key: 'LEFT', start: 70, end: 140 }, { key: 'LEFT', start: 200, end: 300 }, { key: 'LEFT', start: 360, end: 480 }, { key: 'LEFT', start: 530, end: 740 }, { key: 'LEFT', start: 780, end: 800 }, { key: 'LEFT', start: 840, end: 872 },
+    ]
+};
+
 class ImageSequencePlayer {
     constructor(ctx, x, width, height) {
         this.ctx = ctx;
@@ -9,15 +34,15 @@ class ImageSequencePlayer {
         this.currentFrame = 0;
 
         // Speed settings (relative to 60fps)
-        this.minSpeed = 24 / 60; // 0.4
+        this.minSpeed = 12 / 60; // 0.4
         this.maxSpeed = 60 / 60; // 1.0
-        this.baseSpeed = 42 / 60; // 0.7
+        this.baseSpeed = 12 / 60; // 0.7
 
         this.speed = this.baseSpeed;
         this.targetSpeed = this.baseSpeed;
 
-        this.acceleration = 0.05; // Tuned for responsiveness
-        this.deceleration = 0.05;
+        this.acceleration = 0.01; // Tuned for responsiveness
+        this.deceleration = 0.01;
 
         this.isPlaying = false;
         this.loaded = false;
@@ -156,23 +181,23 @@ class RhythmController {
 
         // Left
         if (k === 'A' || k === 'ARROWLEFT') {
-            dx = -spreadX - 20;
-            dy = spreadY / 2 + 10;
+            dx = -spreadX * 2;
+            // dy = spreadY / 2 + 10;
         }
         // Right
         else if (k === 'D' || k === 'ARROWRIGHT') {
-            dx = spreadX + 20;
-            dy = spreadY / 2 + 10;
+            dx = spreadX;
+            // dy = spreadY / 2 + 10;
         }
         // Up
         else if (k === 'W' || k === 'ARROWUP') {
-            dx = -10;
-            dy = -spreadY / 2 - 10;
+            dx = -spreadX;
+            // dy = -spreadY / 2 - 10;
         }
         // Down
         else if (k === 'S' || k === 'ARROWDOWN') {
-            dx = 10;
-            dy = spreadY / 2 + 10;
+            dx = spreadX * 2;
+            // dy = spreadY / 2 + 10;
         }
 
         return {
@@ -320,21 +345,29 @@ class Game {
         this.ctx = this.canvas.getContext("2d");
     }
 
-    generateBeatmap(totalFrames, keys) {
-        // Generate a random-ish but structured beatmap for testing
-        const map = [];
-        let f = 50;
-        while (f < totalFrames - 50) {
-            const k = keys[Math.floor(Math.random() * keys.length)];
-            const duration = 50 + Math.floor(Math.random() * 100);
-            map.push({
+    // Helper to convert abstract directions to specific player keys
+    getMappedBeatmap(carName, isPlayer1) {
+        const rawMap = CAR_BEATMAPS[carName] || [];
+
+        return rawMap.map(note => {
+            let k = note.key;
+            if (isPlayer1) {
+                if (k === 'UP') k = 'W';
+                else if (k === 'DOWN') k = 'S';
+                else if (k === 'LEFT') k = 'A';
+                else if (k === 'RIGHT') k = 'D';
+            } else {
+                if (k === 'UP') k = 'ArrowUp';
+                else if (k === 'DOWN') k = 'ArrowDown';
+                else if (k === 'LEFT') k = 'ArrowLeft';
+                else if (k === 'RIGHT') k = 'ArrowRight';
+            }
+            return {
                 key: k,
-                start: f,
-                end: Math.min(f + duration, totalFrames)
-            });
-            f += Math.floor(duration * 0.8);
-        }
-        return map;
+                start: note.start,
+                end: note.end
+            };
+        });
     }
 
     async start(p1CarIndex, p2CarIndex) {
@@ -356,22 +389,9 @@ class Game {
         const p1Keys = ['W', 'A', 'S', 'D'];
         const p2Keys = ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'];
 
-        // Generate Beatmaps
-        const p1Map = [
-            { key: 'W', start: 0, end: 100 },
-            { key: 'A', start: 50, end: 150 }
-        ];
-        // Append procedural for the rest
-        let f = 160;
-        const total = 873;
-        while (f < total - 50) {
-            const k = p1Keys[Math.floor(Math.random() * p1Keys.length)];
-            const dur = 60;
-            p1Map.push({ key: k, start: f, end: f + dur });
-            f += 80; // Gap
-        }
-
-        const p2Map = this.generateBeatmap(873, p2Keys);
+        // Get Beatmaps from Template
+        const p1Map = this.getMappedBeatmap(getCarName(p1CarIndex), true);
+        const p2Map = this.getMappedBeatmap(getCarName(p2CarIndex), false);
 
         // Init Rhythm Controllers
         // Fixed Top Y = 70 (bit lower to accommodate offsets)
