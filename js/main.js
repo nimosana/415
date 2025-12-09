@@ -42,6 +42,9 @@ let p2ReadyUI = null;
 let spaceListenerAttached = false;
 let pressSpaceUI = null;
 
+let inTutorial = false;
+let tutorialElements = [];
+
 let loadingRN = false;
 const HALF = 0.5;
 
@@ -374,6 +377,12 @@ buttons.forEach(btn => {
             }
         }
     });
+    // Click listeners
+    btn.addEventListener('click', () => {
+        if (btn.id === 'btnTutorial') {
+            openTutorial();
+        }
+    });
     btn.addEventListener('mouseleave', () => {
         if (!menuVideo.src.endsWith(idleSrc)) {
             menuVideo.src = idleSrc;
@@ -393,7 +402,9 @@ function createFloatingUIElement(src, opts) {
         top,
         scale = 0.1,   // relative to container width (0.1 = 10%)
         fadeIn = true,
-        opacity = 1
+        opacity = 1,
+        animate = true,
+        onClick = null
     } = opts;
 
     const container = document.getElementById(containerId);
@@ -411,6 +422,11 @@ function createFloatingUIElement(src, opts) {
     img.style.top = typeof top === "number" ? `${top}%` : top;
     img.style.opacity = fadeIn ? 0 : opacity;
     img.style.transform = "translate(-50%, -50%)"; // Center the image on its coordinates
+
+    if (onClick) {
+        img.style.cursor = "pointer";
+        img.onclick = onClick;
+    }
 
     container.appendChild(img);
 
@@ -435,11 +451,14 @@ function createFloatingUIElement(src, opts) {
     resizeObserver.observe(container);
 
     // Animation interval
-    const interval = setInterval(() => {
-        const r = Math.random() * 5 - 2;
-        const s = 1 + (Math.random() * 0.1 - 0.05);
-        img.style.transform = `translate(-50%, -50%) rotate(${r}deg) scale(${s})`;
-    }, 1000);
+    let interval = null;
+    if (animate) {
+        interval = setInterval(() => {
+            const r = Math.random() * 5 - 2;
+            const s = 1 + (Math.random() * 0.1 - 0.05);
+            img.style.transform = `translate(-50%, -50%) rotate(${r}deg) scale(${s})`;
+        }, 1000);
+    }
 
     floatingUIRegistry.set(img, interval);
 
@@ -572,6 +591,10 @@ function animateKeyPress(element, scaleAmount = 1.5, duration = 150) {
 }
 // Keydown listener for animation
 document.addEventListener("keydown", (e) => {
+    if (inTutorial) {
+        if (e.key === "Escape") closeTutorial();
+        return;
+    }
     if (gameState !== "carSelection") return;
 
     animateKeyPress(keyMap[e.key], 1.5, 150);
@@ -630,4 +653,51 @@ document.addEventListener("keydown", (e) => {
 });
 function removeUi() {
     uiElements.forEach(el => el.remove());
+}
+
+function openTutorial() {
+    inTutorial = true;
+    gameState = "tutorial";
+
+    // Hide Menu UI
+    btnStart.style.display = "none";
+    btnTutorial.style.display = "none";
+    // We can keep the video playing or pause it. Let's keep it but obscured.
+
+    // Tutorial Image (Stationary)
+    tutorialElements.push(createFloatingUIElement("assets/image/tutorial.webp", {
+        containerId: "videoContainer",
+        left: 50,
+        top: 50,
+        scale: 0.85,
+        fadeIn: true,
+        animate: false
+    }));
+
+    // ESC Key (Animated)
+    tutorialElements.push(createFloatingUIElement("assets/image/keys_ESC.webp", {
+        containerId: "videoContainer", left: 4, top: 6, scale: 0.06, fadeIn: true
+    }));
+
+    // Return (Animated + Clickable)
+    tutorialElements.push(createFloatingUIElement("assets/image/return.webp", {
+        containerId: "videoContainer", left: 12, top: 6, scale: 0.09, fadeIn: true,
+        onClick: closeTutorial
+    }));
+}
+
+function closeTutorial() {
+    // Remove UI
+    tutorialElements.forEach(el => {
+        if (el) el.remove();
+    });
+    tutorialElements = [];
+
+    inTutorial = false;
+    // Show Menu UI
+    btnStart.style.display = "block";
+    btnTutorial.style.display = "block";
+
+    // Restore state
+    showMenu(); // Easier to just reset menu state to ensure clean slate
 }
