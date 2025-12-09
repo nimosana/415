@@ -193,7 +193,8 @@ class RhythmController {
         }
 
         if (requiredKeys.size === 0) {
-            this.isCorrect = true;
+            // Penalize holding keys when none are needed
+            this.isCorrect = (this.currentInputs.size === 0);
             return;
         }
 
@@ -203,6 +204,10 @@ class RhythmController {
                 allMet = false;
                 break;
             }
+        }
+
+        if (allMet && this.currentInputs.size !== requiredKeys.size) {
+            allMet = false;
         }
 
         this.isCorrect = allMet;
