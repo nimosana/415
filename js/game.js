@@ -744,11 +744,11 @@ class Game {
         });
 
         // Time Display (Floating with Placeholder Background)
-        this.timeDisplay = this.createFloatingElement("assets/image/placeholder.webp", {
+        this.timeDisplay = this.createFloatingElement("assets/image/blank.webp", {
             containerId: "videoContainer",
             left: 50,
             top: 80, // Bottom Center area
-            scale: 0.25, // Wider for text
+            scale: 0.21, // Wider for text
             fadeIn: true,
             textText: "TIME: " + this.formatTime(finalTime)
         });

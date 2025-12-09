@@ -52,11 +52,11 @@ introVideo.addEventListener("click", () => {
         introVideo.src = introSrc;
         introVideo.style.display = "block";
         introVideo.play();
-        Audio.playRandomSong();
+        GameAudio.playRandomSong();
     }
 });
 // When one song ends → start another
-bgm.addEventListener("ended", Audio.playRandomSong);
+bgm.addEventListener("ended", GameAudio.playRandomSong);
 
 menuVideo.style.display = "none";
 btnStart.style.display = "none";
@@ -69,6 +69,9 @@ introVideo.addEventListener("ended", () => {
     menuVideo.style.display = "block";
     btnStart.style.display = "block";
     btnTutorial.style.display = "block";
+    if (window.GameAudio) {
+        GameAudio.showNotification("assets/audio/skip.webp");
+    }
 
     menuVideo.play();
 });
@@ -208,8 +211,8 @@ function showMenu() {
     gameState = "menu";
 
     // Show audio instruction
-    if (window.Audio) {
-        Audio.showNotification("assets/image/placeholder.webp");
+    if (window.GameAudio) {
+        GameAudio.showNotification("assets/audio/skip.webp");
     }
 
     // Reset flags
@@ -262,8 +265,8 @@ function checkReadyState() {
     if (p1Ready && p2Ready) {
         // Show "Press SPACE" UI if not already shown
         if (!pressSpaceUI) {
-            pressSpaceUI = createFloatingUIElement("assets/image/keys_SPACE.png", { // Assuming you have or will create this, or use text
-                containerId: "videoContainer", left: 50, top: 50, scale: 0.3, fadeIn: true
+            pressSpaceUI = createFloatingUIElement("assets/image/pressSpace.webp", { // Assuming you have or will create this, or use text
+                containerId: "videoContainer", left: 50, top: 50, scale: 0.2, fadeIn: true
             });
             // If asset doesn't exist, we might want a fallback text or log, but for now assuming asset exists or using a known one.
             // Actually, let's just use a text element if the image might be missing, but the user didn't provide "press_space.webp".
@@ -311,7 +314,7 @@ async function startGame() {
     if (p2ReadyUI) p2ReadyUI.remove();
 
     // Show Loading UI
-    const loadingUI = createFloatingUIElement("assets/image/loading.png", {
+    const loadingUI = createFloatingUIElement("assets/image/loading.webp", {
         containerId: "videoContainer", left: 50, top: 50, scale: 0.2, fadeIn: true
     });
     loadingRN = true;

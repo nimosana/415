@@ -1,107 +1,118 @@
-class Audio {
+class GameAudio {
 
     static firstSong = true;
 
     // Original playlist
     // Original playlist
     static masterList = [
-        { path: "assets/audio/song1.mp3", image: "assets/image/placeholder.webp" },
-        { path: "assets/audio/song2.mp3", image: "assets/image/placeholder.webp" },
-        { path: "assets/audio/song3.mp3", image: "assets/image/placeholder.webp" },
-        { path: "assets/audio/song4.mp3", image: "assets/image/placeholder.webp" },
-        { path: "assets/audio/song5.mp3", image: "assets/image/placeholder.webp" }
+        { path: "assets/audio/song1.mp3", image: "assets/audio/song1.webp" },
+        { path: "assets/audio/song2.mp3", image: "assets/audio/song2.webp" },
+        { path: "assets/audio/song3.mp3", image: "assets/audio/song3.webp" },
+        { path: "assets/audio/song4.mp3", image: "assets/audio/song4.webp" },
+        { path: "assets/audio/song5.mp3", image: "assets/audio/song5.webp" }
 
     ];
 
     static bgm = document.getElementById("bgm");
     // This will be filled and emptied as songs are played
-    static playlist = [{ path: "assets/audio/song1.mp3", image: "assets/image/placeholder.webp" },
-    { path: "assets/audio/song2.mp3", image: "assets/image/placeholder.webp" },
-    { path: "assets/audio/song3.mp3", image: "assets/image/placeholder.webp" },
-    { path: "assets/audio/song4.mp3", image: "assets/image/placeholder.webp" },
-    { path: "assets/audio/song5.mp3", image: "assets/image/placeholder.webp" }];
+    static playlist = [{ path: "assets/audio/song1.mp3", image: "assets/audio/song1.webp" },
+    { path: "assets/audio/song2.mp3", image: "assets/audio/song2.webp" },
+    { path: "assets/audio/song3.mp3", image: "assets/audio/song3.webp" },
+    { path: "assets/audio/song4.mp3", image: "assets/audio/song4.webp" },
+    { path: "assets/audio/song5.mp3", image: "assets/audio/song5.webp" }];
+    static nowPlaying = "assets/audio/nowPlaying.webp"
     static lastSong = "";
-    static currentNotification = null;
+    static activeNotifications = [];
+    static notificationTimer = null;
     // Get a random item and remove it from the list
     static getRandomSong() {
         let i = null;
-        if (Audio.playlist.length === 0) {
+        if (GameAudio.playlist.length === 0) {
             // refill when empty
             console.log("refilling playlist");
-            Audio.playlist = [...Audio.masterList];
-            i = Math.floor(Math.random() * Audio.playlist.length);
-            while (Audio.playlist[i].path === Audio.lastSong) {
-                i = Math.floor(Math.random() * Audio.playlist.length);
-                console.log("skipping duplicate song: " + Audio.playlist[i].path);
+            GameAudio.playlist = [...GameAudio.masterList];
+            i = Math.floor(Math.random() * GameAudio.playlist.length);
+            while (GameAudio.playlist[i].path === GameAudio.lastSong) {
+                i = Math.floor(Math.random() * GameAudio.playlist.length);
+                console.log("skipping duplicate song: " + GameAudio.playlist[i].path);
             }
-        } else { i = Math.floor(Math.random() * Audio.playlist.length) };
-        if (Audio.firstSong) {
+        } else { i = Math.floor(Math.random() * GameAudio.playlist.length) };
+        if (GameAudio.firstSong) {
             i = 0;
-            Audio.firstSong = false;
+            GameAudio.firstSong = false;
         }
-        return Audio.playlist.splice(i, 1)[0];
+        return GameAudio.playlist.splice(i, 1)[0];
     }
 
     static playRandomSong() {
-        if (Audio.playlist.length === 0) {
-            Audio.getRandomSong();
+        if (GameAudio.playlist.length === 0) {
+            GameAudio.getRandomSong();
         }
 
-        const next = Audio.getRandomSong();
+        const next = GameAudio.getRandomSong();
         if (!next) return;
 
-        Audio.bgm.src = next.path;
-        Audio.lastSong = next.path;
+        GameAudio.bgm.src = next.path;
+        GameAudio.lastSong = next.path;
         console.log("Playing: " + next.path);
 
-        Audio.bgm.load();
-        Audio.bgm.addEventListener("canplaythrough", () => {
-            Audio.bgm.play().catch(() => { });
+        GameAudio.bgm.load();
+        GameAudio.bgm.addEventListener("canplaythrough", () => {
+            GameAudio.bgm.play().catch(() => { });
         }, { once: true });
 
-        Audio.showNotification(next.image);
+        GameAudio.clearNotifications();
+        GameAudio.showNotification(next.image);
+        GameAudio.showNotification(GameAudio.nowPlaying, { left: 80, top: 6, scale: 0.1 });
     }
 
-    static showNotification(imageSrc) {
-        // Remove existing notification if any
-        if (Audio.currentNotification) {
-            Audio.currentNotification.remove();
-            Audio.currentNotification = null;
+    static clearNotifications() {
+        if (GameAudio.notificationTimer) {
+            clearTimeout(GameAudio.notificationTimer);
+            GameAudio.notificationTimer = null;
         }
+        GameAudio.activeNotifications.forEach(n => n.remove());
+        GameAudio.activeNotifications = [];
+    }
+
+    static showNotification(imageSrc, options = {}) {
+        const settings = {
+            left: 85,
+            top: 15,
+            scale: 0.2,
+            ...options
+        };
 
         if (typeof window.createFloatingUIElement === 'function') {
             const notif = window.createFloatingUIElement(imageSrc, {
                 containerId: "videoContainer",
-                left: 85,
-                top: 15,
-                scale: 0.2,
+                left: settings.left,
+                top: settings.top,
+                scale: settings.scale,
                 fadeIn: true
             });
 
-            Audio.currentNotification = notif;
+            GameAudio.activeNotifications.push(notif);
 
-            // Fade out after 3 seconds
-            setTimeout(() => {
-                if (Audio.currentNotification === notif) {
-                    notif.remove();
-                    Audio.currentNotification = null;
-                }
+            if (GameAudio.notificationTimer) clearTimeout(GameAudio.notificationTimer);
+            GameAudio.notificationTimer = setTimeout(() => {
+                GameAudio.clearNotifications();
             }, 3000);
         }
     }
 
     static skipSong() {
         console.log("Skipping song...");
-        Audio.playRandomSong();
+        GameAudio.playRandomSong();
     }
 
     static init() {
         document.addEventListener("keydown", (e) => {
             if (e.key === "1") {
-                Audio.skipSong();
+                GameAudio.skipSong();
             }
         });
     }
 }
 
-Audio.init();
+GameAudio.init();
