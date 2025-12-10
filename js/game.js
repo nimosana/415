@@ -20,6 +20,12 @@ const CAR_BEATMAPS = {
         { key: 'DOWN', start: 40, end: 70 }, { key: 'DOWN', start: 120, end: 140 }, { key: 'DOWN', start: 330, end: 360 }, { key: 'DOWN', start: 750, end: 790 },
         { key: 'RIGHT', start: 40, end: 70 }, { key: 'RIGHT', start: 140, end: 200 }, { key: 'RIGHT', start: 330, end: 360 }, { key: 'RIGHT', start: 480, end: 530 }, { key: 'RIGHT', start: 740, end: 780 }, { key: 'RIGHT', start: 800, end: 840 },
         { key: 'LEFT', start: 70, end: 140 }, { key: 'LEFT', start: 200, end: 300 }, { key: 'LEFT', start: 360, end: 480 }, { key: 'LEFT', start: 530, end: 740 }, { key: 'LEFT', start: 780, end: 800 }, { key: 'LEFT', start: 840, end: 872 },
+    ],
+    car4: [
+        { key: 'UP', start: 0, end: 40 }, { key: 'UP', start: 100, end: 120 }, { key: 'UP', start: 160, end: 180 }, { key: 'UP', start: 240, end: 300 }, { key: 'UP', start: 370, end: 420 }, { key: 'UP', start: 460, end: 520 }, { key: 'UP', start: 620, end: 660 }, { key: 'UP', start: 700, end: 730 }, { key: 'UP', start: 760, end: 830 }, { key: 'UP', start: 850, end: 872 },
+        { key: 'DOWN', start: 40, end: 70 }, { key: 'DOWN', start: 180, end: 200 }, { key: 'DOWN', start: 300, end: 340 }, { key: 'DOWN', start: 540, end: 560 }, { key: 'DOWN', start: 730, end: 760 }, { key: 'DOWN', start: 830, end: 850 },
+        { key: 'RIGHT', start: 50, end: 110 }, { key: 'RIGHT', start: 200, end: 280 }, { key: 'RIGHT', start: 310, end: 420 }, { key: 'RIGHT', start: 500, end: 700 }, { key: 'RIGHT', start: 720, end: 810 }, { key: 'RIGHT', start: 830, end: 872 },
+        { key: 'LEFT', start: 120, end: 200 }, { key: 'LEFT', start: 420, end: 500 }, { key: 'LEFT', start: 700, end: 720 },
     ]
 };
 
